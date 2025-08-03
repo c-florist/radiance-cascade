@@ -18,8 +18,9 @@ opt-level = 1
 opt-level = 3
 
 [dependencies]
-bevy = "0.13"
+bevy = "0.16"
 console_error_panic_hook = "0.1"
+log = { version = "*", features = ["max_level_debug", "release_max_level_warn"] }
 
 [target.wasm32-unknown-unknown.dependencies]
 getrandom = { version = "0.3", features = ["wasm_js"] }
