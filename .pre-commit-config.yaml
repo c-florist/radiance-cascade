@@ -6,9 +6,11 @@ repos:
         language: system
         entry: cargo check
         files: 'src/'
+        pass_filenames: false
 
       - id: rustfmt
         name: 'rustfmt'
         language: system
         entry: cargo fmt
         files: 'src/'
+        pass_filenames: false

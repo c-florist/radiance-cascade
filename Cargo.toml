@@ -1,7 +1,15 @@
 [package]
 name = "radiance-cascade"
 version = "0.1.0"
-edition = "2021"
+description = "A simulation of moth behaviour"
+authors = ["Connor Flowers"]
+repository = "https://github.com/c-florist/radiance-cascade"
+edition = "2024"
+rust-version = "1.88.0"
+
+[package.metadata]
+# Install with: `cargo install --locked --version <trunk-version> trunk`
+trunk-version = "0.21"
 
 [profile.dev]
 opt-level = 1
@@ -10,4 +18,9 @@ opt-level = 1
 opt-level = 3
 
 [dependencies]
-bevy = "0.13.2"
+bevy = "0.13"
+console_error_panic_hook = "0.1"
+
+[target.wasm32-unknown-unknown.dependencies]
+getrandom = { version = "0.3", features = ["wasm_js"] }
+uuid = { version = "1.17", features = ["js"] }
