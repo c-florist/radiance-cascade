@@ -70,3 +70,6 @@ Thumbs.db
 # Added by cargo
 
 /target
+
+# Rust development
+.rust-analyzer/
