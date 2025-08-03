@@ -1,2 +1,5 @@
+[env]
+_.file = ".env.secrets"
+
 [tools]
-rust = "latest"
+rust = "1.88"

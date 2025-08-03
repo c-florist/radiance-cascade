@@ -1,0 +1,14 @@
+repos:
+  - repo: local
+    hooks:
+      - id: cargo-check
+        name: 'cargo check'
+        language: system
+        entry: cargo check
+        files: 'src/'
+
+      - id: rustfmt
+        name: 'rustfmt'
+        language: system
+        entry: cargo fmt
+        files: 'src/'
