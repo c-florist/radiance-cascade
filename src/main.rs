@@ -4,7 +4,7 @@ use rand::Rng;
 use std::f32::consts::PI;
 use std::panic;
 
-use crate::components::{Moth, Velocity};
+use crate::components::{Lantern, Moth, Velocity};
 use crate::constants::{MOTH_COUNT, MOTH_SPEED};
 use crate::systems::*;
 
@@ -70,6 +70,7 @@ fn setup_scene(
             ..default()
         },
         Transform::from_xyz(0.0, 1.0, 0.5),
+        Lantern { radiance: 15.0 },
     ));
 
     // Camera

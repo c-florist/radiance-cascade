@@ -1,65 +1,79 @@
-use crate::components::{Moth, Velocity};
+use crate::components::{Lantern, Moth, Velocity};
 use crate::constants::{
-    ALIGNMENT_WEIGHT, COHESION_WEIGHT, MOTH_SPEED, PERCEPTION_RADIUS, SEPARATION_WEIGHT,
+    ALIGNMENT_WEIGHT, ATTRACTION_WEIGHT, COHESION_WEIGHT, MOTH_SPEED, PERCEPTION_RADIUS,
+    SEPARATION_WEIGHT,
 };
 use bevy::prelude::*;
 
-pub fn flocking_system(mut query: Query<(Entity, &Transform, &mut Velocity), With<Moth>>) {
-    // Collect all moth data into a vector of owned types. This avoids holding a borrow on the query
-    // and allows us to iterate over it mutably later.
-    let moth_data: Vec<(Entity, Transform, Velocity)> = query
+pub fn flocking_system(
+    mut moth_query: Query<(Entity, &Transform, &mut Velocity), With<Moth>>,
+    lantern_query: Query<(&Transform, &Lantern)>,
+) {
+    let moth_data: Vec<(Entity, Transform, Velocity)> = moth_query
         .iter()
         .map(|(entity, transform, velocity)| (entity, *transform, velocity.clone()))
         .collect();
 
-    for (entity, transform, mut velocity) in query.iter_mut() {
+    let lanterns: Vec<(&Transform, &Lantern)> = lantern_query.iter().collect();
+
+    for (entity, transform, mut velocity) in moth_query.iter_mut() {
         let mut separation = Vec3::ZERO;
         let mut alignment = Vec3::ZERO;
         let mut cohesion = Vec3::ZERO;
+        let mut attraction = Vec3::ZERO;
         let mut local_flockmates = 0;
 
-        // Use the collected data for calculations
+        // --- Flocking Calculations ---
         for (other_entity, other_transform, other_velocity) in &moth_data {
-            // Don't compare a moth to itself
             if entity == *other_entity {
                 continue;
             }
 
             let distance = transform.translation.distance(other_transform.translation);
-
             if distance > 0.0 && distance < PERCEPTION_RADIUS {
-                // Separation: Steer away from neighbors to avoid crowding
                 separation +=
                     (transform.translation - other_transform.translation) / distance.powi(2);
-
-                // Alignment: Steer towards the average heading of neighbors
                 alignment += other_velocity.0;
-
-                // Cohesion: Steer towards the average position of neighbors
                 cohesion += other_transform.translation;
-
                 local_flockmates += 1;
             }
         }
 
+        // --- Attraction Calculation ---
+        if !lanterns.is_empty() {
+            // Find the closest lantern
+            let (closest_lantern_transform, lantern) = lanterns
+                .iter()
+                .min_by(|(a, _), (b, _)| {
+                    let dist_a = transform.translation.distance(a.translation);
+                    let dist_b = transform.translation.distance(b.translation);
+                    dist_a.partial_cmp(&dist_b).unwrap()
+                })
+                .unwrap();
+
+            let direction_to_lantern =
+                (closest_lantern_transform.translation - transform.translation).normalize_or_zero();
+            attraction = direction_to_lantern * lantern.radiance;
+        }
+
+        // --- Apply Forces ---
         if local_flockmates > 0 {
-            // Calculate the average alignment and cohesion
             let avg_alignment = alignment / local_flockmates as f32;
             let avg_cohesion = cohesion / local_flockmates as f32;
 
-            // Calculate steering force, using normalize_or_zero to prevent panics
             let alignment_force = (avg_alignment.normalize_or_zero() * MOTH_SPEED) - velocity.0;
             let cohesion_force = (avg_cohesion - transform.translation).normalize_or_zero()
                 * MOTH_SPEED
                 - velocity.0;
 
-            // Apply weights to the forces
             velocity.0 += separation * SEPARATION_WEIGHT;
             velocity.0 += alignment_force * ALIGNMENT_WEIGHT;
             velocity.0 += cohesion_force * COHESION_WEIGHT;
         }
 
-        // Clamp velocity to max speed and apply it
+        velocity.0 += attraction * ATTRACTION_WEIGHT;
+
+        // Clamp velocity to max speed
         velocity.0 = velocity.0.normalize_or_zero() * MOTH_SPEED;
     }
 }
