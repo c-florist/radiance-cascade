@@ -2,13 +2,19 @@ use bevy::core_pipeline::bloom::Bloom;
 use bevy::prelude::*;
 use rand::Rng;
 use std::f32::consts::PI;
+use std::panic;
 
 use crate::components::{Moth, Velocity};
+use crate::constants::{MOTH_COUNT, MOTH_SPEED};
+use crate::systems::*;
 
 mod components;
+mod constants;
 mod systems;
 
 fn main() {
+    panic::set_hook(Box::new(console_error_panic_hook::hook));
+
     App::new()
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
@@ -20,6 +26,7 @@ fn main() {
             ..default()
         }))
         .add_systems(Startup, (setup_scene, setup_moths).chain())
+        .add_systems(Update, (flocking_system, move_moths_system).chain())
         .run();
 }
 
@@ -82,9 +89,6 @@ pub fn setup_moths(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    const MOTH_COUNT: u32 = 150;
-    const MOTH_SPEED: f32 = 2.5;
-
     let mut rng = rand::rng();
 
     for _ in 0..MOTH_COUNT {
