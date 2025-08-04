@@ -1,12 +1,15 @@
-use crate::components::{Lantern, Moth, Velocity};
+use crate::components::{LandedTimer, Lantern, Moth, Velocity};
 use crate::constants::{
-    ALIGNMENT_WEIGHT, ATTRACTION_WEIGHT, COHESION_WEIGHT, MOTH_SPEED, PERCEPTION_RADIUS,
-    SEPARATION_WEIGHT,
+    ALIGNMENT_WEIGHT, ATTRACTION_WEIGHT, COHESION_WEIGHT, LANDED_DURATION_SECS, LANDING_CHANCE,
+    LANDING_DISTANCE, MOTH_SPEED, PERCEPTION_RADIUS, SEPARATION_WEIGHT,
 };
 use bevy::prelude::*;
+use rand::Rng;
 
+/// This system manages the flocking behavior of moths that are currently flying.
 pub fn flocking_system(
-    mut moth_query: Query<(Entity, &Transform, &mut Velocity), With<Moth>>,
+    // We query for moths that are specifically NOT landed.
+    mut moth_query: Query<(Entity, &Transform, &mut Velocity), (With<Moth>, Without<LandedTimer>)>,
     lantern_query: Query<(&Transform, &Lantern)>,
 ) {
     let moth_data: Vec<(Entity, Transform, Velocity)> = moth_query
@@ -41,7 +44,6 @@ pub fn flocking_system(
 
         // --- Attraction Calculation ---
         if !lanterns.is_empty() {
-            // Find the closest lantern
             let (closest_lantern_transform, lantern) = lanterns
                 .iter()
                 .min_by(|(a, _), (b, _)| {
@@ -75,6 +77,69 @@ pub fn flocking_system(
 
         // Clamp velocity to max speed
         velocity.0 = velocity.0.normalize_or_zero() * MOTH_SPEED;
+    }
+}
+
+/// This system manages the state of moths, allowing them to land on and take off from lanterns.
+pub fn moth_landing_system(
+    mut commands: Commands,
+    time: Res<Time>,
+    lantern_query: Query<&Transform, With<Lantern>>,
+    mut moth_query: Query<
+        (Entity, &Transform, &mut Velocity, Option<&mut LandedTimer>),
+        With<Moth>,
+    >,
+) {
+    let mut rng = rand::rng();
+    let lanterns: Vec<&Transform> = lantern_query.iter().collect();
+
+    if lanterns.is_empty() {
+        return; // No lanterns, no landing
+    }
+
+    for (moth_entity, moth_transform, mut velocity, landed_timer_opt) in &mut moth_query {
+        if let Some(mut landed_timer) = landed_timer_opt {
+            // --- Moth is currently landed, check if it should take off ---
+            landed_timer.0.tick(time.delta());
+            if landed_timer.0.finished() {
+                // Timer finished, remove the landed state and give it a new velocity
+                commands.entity(moth_entity).remove::<LandedTimer>();
+                velocity.0 = Vec3::new(
+                    rng.random_range(-1.0..1.0),
+                    rng.random_range(-1.0..1.0),
+                    rng.random_range(-1.0..1.0),
+                )
+                .normalize_or_zero()
+                    * MOTH_SPEED;
+            }
+        } else {
+            // --- Moth is currently flying, check if it should land ---
+            // Find the closest lantern
+            let closest_lantern_transform = lanterns
+                .iter()
+                .min_by(|a, b| {
+                    let dist_a = moth_transform.translation.distance(a.translation);
+                    let dist_b = moth_transform.translation.distance(b.translation);
+                    dist_a.partial_cmp(&dist_b).unwrap()
+                })
+                .unwrap();
+
+            let distance_to_lantern = moth_transform
+                .translation
+                .distance(closest_lantern_transform.translation);
+
+            // Check if the moth is within landing distance and has a chance to land
+            if distance_to_lantern < LANDING_DISTANCE && rng.random_bool(LANDING_CHANCE) {
+                // Stop the moth and add the landed timer component
+                velocity.0 = Vec3::ZERO;
+                commands
+                    .entity(moth_entity)
+                    .insert(LandedTimer(Timer::from_seconds(
+                        LANDED_DURATION_SECS,
+                        TimerMode::Once,
+                    )));
+            }
+        }
     }
 }
 

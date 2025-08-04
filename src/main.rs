@@ -26,7 +26,10 @@ fn main() {
             ..default()
         }))
         .add_systems(Startup, (setup_scene, setup_moths).chain())
-        .add_systems(Update, (flocking_system, move_moths_system).chain())
+        .add_systems(
+            Update,
+            (moth_landing_system, flocking_system, move_moths_system).chain(),
+        )
         .run();
 }
 

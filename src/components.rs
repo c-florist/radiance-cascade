@@ -10,3 +10,6 @@ pub struct Velocity(pub Vec3);
 pub struct Lantern {
     pub radiance: f32,
 }
+
+#[derive(Component)]
+pub struct LandedTimer(pub Timer);
