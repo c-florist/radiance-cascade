@@ -1,108 +1,131 @@
 use crate::components::{LandedTimer, Lantern, Moth, Velocity};
-use crate::constants::{
-    ALIGNMENT_WEIGHT, ATTRACTION_WEIGHT, COHESION_WEIGHT, LANDED_DURATION_SECS, LANDING_CHANCE,
-    LANDING_DISTANCE, MOTH_SPEED, PERCEPTION_RADIUS, SEPARATION_WEIGHT,
-};
+use crate::config::FlockingConfig;
 use bevy::prelude::*;
 use rand::Rng;
 
-/// This system manages the flocking behavior of moths that are currently flying.
 pub fn flocking_system(
-    // We query for moths that are specifically NOT landed.
-    mut moth_query: Query<(Entity, &Transform, &mut Velocity), (With<Moth>, Without<LandedTimer>)>,
-    lantern_query: Query<(&Transform, &Lantern)>,
+    config: Res<FlockingConfig>,
+    mut queries: ParamSet<(
+        Query<(Entity, &Transform, &mut Velocity), (With<Moth>, Without<LandedTimer>)>,
+        Query<(Entity, &Transform, &Velocity), With<Moth>>,
+    )>,
+    lanterns: Query<(&Transform, &Lantern)>,
 ) {
-    let moth_data: Vec<(Entity, Transform, Velocity)> = moth_query
+    let flock_snapshot: Vec<(Entity, Transform, Velocity)> = queries
+        .p1()
         .iter()
         .map(|(entity, transform, velocity)| (entity, *transform, velocity.clone()))
         .collect();
 
-    let lanterns: Vec<(&Transform, &Lantern)> = lantern_query.iter().collect();
+    let lantern_snapshot: Vec<(&Transform, &Lantern)> = lanterns.iter().collect();
 
-    for (entity, transform, mut velocity) in moth_query.iter_mut() {
-        let mut separation = Vec3::ZERO;
-        let mut alignment = Vec3::ZERO;
-        let mut cohesion = Vec3::ZERO;
-        let mut attraction = Vec3::ZERO;
-        let mut local_flockmates = 0;
+    for (moth_entity, moth_transform, mut velocity) in queries.p0().iter_mut() {
+        let (separation, alignment, cohesion, local_flockmates) =
+            calculate_flocking_forces(moth_entity, moth_transform, &flock_snapshot, &config);
 
-        // --- Flocking Calculations ---
-        for (other_entity, other_transform, other_velocity) in &moth_data {
-            if entity == *other_entity {
-                continue;
-            }
+        let attraction = calculate_attraction_force(moth_transform, &lantern_snapshot);
 
-            let distance = transform.translation.distance(other_transform.translation);
-            if distance > 0.0 && distance < PERCEPTION_RADIUS {
-                separation +=
-                    (transform.translation - other_transform.translation) / distance.powi(2);
-                alignment += other_velocity.0;
-                cohesion += other_transform.translation;
-                local_flockmates += 1;
-            }
-        }
+        let mut final_velocity = velocity.0;
 
-        // --- Attraction Calculation ---
-        if !lanterns.is_empty() {
-            let (closest_lantern_transform, lantern) = lanterns
-                .iter()
-                .min_by(|(a, _), (b, _)| {
-                    let dist_a = transform.translation.distance(a.translation);
-                    let dist_b = transform.translation.distance(b.translation);
-                    dist_a.partial_cmp(&dist_b).unwrap()
-                })
-                .unwrap();
-
-            let direction_to_lantern =
-                (closest_lantern_transform.translation - transform.translation).normalize_or_zero();
-            attraction = direction_to_lantern * lantern.radiance;
-        }
-
-        // --- Apply Forces ---
         if local_flockmates > 0 {
             let avg_alignment = alignment / local_flockmates as f32;
             let avg_cohesion = cohesion / local_flockmates as f32;
 
-            let alignment_force = (avg_alignment.normalize_or_zero() * MOTH_SPEED) - velocity.0;
-            let cohesion_force = (avg_cohesion - transform.translation).normalize_or_zero()
-                * MOTH_SPEED
-                - velocity.0;
+            let alignment_steering =
+                (avg_alignment.normalize_or_zero() * config.moth_speed) - final_velocity;
+            let cohesion_steering = (avg_cohesion - moth_transform.translation).normalize_or_zero()
+                * config.moth_speed
+                - final_velocity;
 
-            velocity.0 += separation * SEPARATION_WEIGHT;
-            velocity.0 += alignment_force * ALIGNMENT_WEIGHT;
-            velocity.0 += cohesion_force * COHESION_WEIGHT;
+            final_velocity += separation * config.separation_weight;
+            final_velocity += alignment_steering * config.alignment_weight;
+            final_velocity += cohesion_steering * config.cohesion_weight;
         }
 
-        velocity.0 += attraction * ATTRACTION_WEIGHT;
-
-        // Clamp velocity to max speed
-        velocity.0 = velocity.0.normalize_or_zero() * MOTH_SPEED;
+        final_velocity += attraction * config.attraction_weight;
+        velocity.0 = final_velocity.normalize_or_zero() * config.moth_speed;
     }
 }
 
-/// This system manages the state of moths, allowing them to land on and take off from lanterns.
+fn calculate_flocking_forces(
+    current_moth_entity: Entity,
+    current_moth_transform: &Transform,
+    flock_snapshot: &[(Entity, Transform, Velocity)],
+    config: &FlockingConfig,
+) -> (Vec3, Vec3, Vec3, u32) {
+    let mut separation = Vec3::ZERO;
+    let mut alignment = Vec3::ZERO;
+    let mut cohesion = Vec3::ZERO;
+    let mut local_flockmates = 0;
+
+    for (other_moth_entity, other_moth_transform, other_moth_velocity) in flock_snapshot {
+        if current_moth_entity == *other_moth_entity {
+            continue;
+        }
+
+        let distance = current_moth_transform
+            .translation
+            .distance(other_moth_transform.translation);
+
+        if distance > 0.0 && distance < config.perception_radius {
+            separation += (current_moth_transform.translation - other_moth_transform.translation)
+                / distance.powi(2);
+            alignment += other_moth_velocity.0;
+            cohesion += other_moth_transform.translation;
+            local_flockmates += 1;
+        }
+    }
+    (separation, alignment, cohesion, local_flockmates)
+}
+
+fn calculate_attraction_force(
+    moth_transform: &Transform,
+    lantern_snapshot: &[(&Transform, &Lantern)],
+) -> Vec3 {
+    if lantern_snapshot.is_empty() {
+        return Vec3::ZERO;
+    }
+
+    let (closest_lantern_transform, lantern) = lantern_snapshot
+        .iter()
+        .min_by(|(a, _), (b, _)| {
+            moth_transform
+                .translation
+                .distance(a.translation)
+                .partial_cmp(&moth_transform.translation.distance(b.translation))
+                .unwrap()
+        })
+        .unwrap();
+
+    let direction_to_lantern =
+        (closest_lantern_transform.translation - moth_transform.translation).normalize_or_zero();
+    direction_to_lantern * lantern.radiance
+}
+
 pub fn moth_landing_system(
     mut commands: Commands,
     time: Res<Time>,
-    lantern_query: Query<&Transform, With<Lantern>>,
-    mut moth_query: Query<
-        (Entity, &Transform, &mut Velocity, Option<&mut LandedTimer>),
-        With<Moth>,
-    >,
+    config: Res<FlockingConfig>,
+    lanterns: Query<&Transform, With<Lantern>>,
+    mut moths: Query<(Entity, &Transform, &mut Velocity, Option<&mut LandedTimer>), With<Moth>>,
 ) {
     let mut rng = rand::rng();
-    let lanterns: Vec<&Transform> = lantern_query.iter().collect();
+    let lantern_transforms: Vec<&Transform> = lanterns.iter().collect();
 
-    if lanterns.is_empty() {
-        return; // No lanterns, no landing
+    if lantern_transforms.is_empty() {
+        return;
     }
 
-    for (moth_entity, moth_transform, mut velocity, landed_timer_opt) in &mut moth_query {
-        if let Some(mut landed_timer) = landed_timer_opt {
-            // --- Moth is currently landed, check if it should take off ---
-            landed_timer.0.tick(time.delta());
-            if landed_timer.0.finished() {
-                // Timer finished, remove the landed state and give it a new velocity
+    for (moth_entity, moth_transform, mut velocity, maybe_landed_timer) in &mut moths {
+        let action = match maybe_landed_timer {
+            Some(mut landed_timer) => determine_takeoff_action(&mut landed_timer, &time),
+            None => {
+                determine_landing_action(moth_transform, &lantern_transforms, &config, &mut rng)
+            }
+        };
+
+        match action {
+            MothAction::TakeOff => {
                 commands.entity(moth_entity).remove::<LandedTimer>();
                 velocity.0 = Vec3::new(
                     rng.random_range(-1.0..1.0),
@@ -110,36 +133,63 @@ pub fn moth_landing_system(
                     rng.random_range(-1.0..1.0),
                 )
                 .normalize_or_zero()
-                    * MOTH_SPEED;
+                    * config.moth_speed;
             }
-        } else {
-            // --- Moth is currently flying, check if it should land ---
-            // Find the closest lantern
-            let closest_lantern_transform = lanterns
-                .iter()
-                .min_by(|a, b| {
-                    let dist_a = moth_transform.translation.distance(a.translation);
-                    let dist_b = moth_transform.translation.distance(b.translation);
-                    dist_a.partial_cmp(&dist_b).unwrap()
-                })
-                .unwrap();
-
-            let distance_to_lantern = moth_transform
-                .translation
-                .distance(closest_lantern_transform.translation);
-
-            // Check if the moth is within landing distance and has a chance to land
-            if distance_to_lantern < LANDING_DISTANCE && rng.random_bool(LANDING_CHANCE) {
-                // Stop the moth and add the landed timer component
+            MothAction::Land => {
                 velocity.0 = Vec3::ZERO;
                 commands
                     .entity(moth_entity)
                     .insert(LandedTimer(Timer::from_seconds(
-                        LANDED_DURATION_SECS,
+                        config.landed_duration_secs,
                         TimerMode::Once,
                     )));
             }
+            MothAction::DoNothing => {}
         }
+    }
+}
+
+#[derive(PartialEq, Debug)]
+enum MothAction {
+    TakeOff,
+    Land,
+    DoNothing,
+}
+
+fn determine_takeoff_action(landed_timer: &mut LandedTimer, time: &Time) -> MothAction {
+    landed_timer.0.tick(time.delta());
+    if landed_timer.0.finished() {
+        MothAction::TakeOff
+    } else {
+        MothAction::DoNothing
+    }
+}
+
+fn determine_landing_action(
+    moth_transform: &Transform,
+    lantern_transforms: &[&Transform],
+    config: &FlockingConfig,
+    rng: &mut impl Rng,
+) -> MothAction {
+    let closest_lantern = lantern_transforms
+        .iter()
+        .min_by(|a, b| {
+            moth_transform
+                .translation
+                .distance(a.translation)
+                .partial_cmp(&moth_transform.translation.distance(b.translation))
+                .unwrap()
+        })
+        .unwrap();
+
+    let distance_to_lantern = moth_transform
+        .translation
+        .distance(closest_lantern.translation);
+
+    if distance_to_lantern < config.landing_distance && rng.random_bool(config.landing_chance) {
+        MothAction::Land
+    } else {
+        MothAction::DoNothing
     }
 }
 
@@ -152,5 +202,32 @@ pub fn move_moths_system(
         if velocity.0 != Vec3::ZERO {
             transform.look_to(velocity.0, Vec3::Y);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bevy::time::{Timer, TimerMode};
+    use std::time::Duration;
+
+    #[test]
+    fn test_determine_takeoff_action_when_timer_is_finished() {
+        let mut timer = LandedTimer(Timer::from_seconds(1.0, TimerMode::Once));
+        let mut time = Time::default();
+        time.advance_by(Duration::from_secs(2)); // Finish the timer
+
+        let action = determine_takeoff_action(&mut timer, &time);
+        assert_eq!(action, MothAction::TakeOff);
+    }
+
+    #[test]
+    fn test_determine_takeoff_action_when_timer_is_not_finished() {
+        let mut timer = LandedTimer(Timer::from_seconds(2.0, TimerMode::Once));
+        let mut time = Time::default();
+        time.advance_by(Duration::from_secs(1)); // Don't finish the timer
+
+        let action = determine_takeoff_action(&mut timer, &time);
+        assert_eq!(action, MothAction::DoNothing);
     }
 }

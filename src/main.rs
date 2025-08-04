@@ -5,11 +5,11 @@ use std::f32::consts::PI;
 use std::panic;
 
 use crate::components::{Lantern, Moth, Velocity};
-use crate::constants::{MOTH_COUNT, MOTH_SPEED};
+use crate::config::FlockingConfig;
 use crate::systems::*;
 
 mod components;
-mod constants;
+mod config;
 mod systems;
 
 fn main() {
@@ -25,6 +25,7 @@ fn main() {
             }),
             ..default()
         }))
+        .insert_resource(FlockingConfig::default())
         .add_systems(Startup, (setup_scene, setup_moths).chain())
         .add_systems(
             Update,
@@ -92,10 +93,11 @@ pub fn setup_moths(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    config: Res<FlockingConfig>,
 ) {
     let mut rng = rand::rng();
 
-    for _ in 0..MOTH_COUNT {
+    for _ in 0..config.moth_count {
         commands.spawn((
             Mesh3d(meshes.add(Cone::new(0.05, 0.1))),
             MeshMaterial3d(materials.add(Color::srgb(0.9, 0.9, 0.8))),
@@ -112,7 +114,7 @@ pub fn setup_moths(
                     rng.random_range(-1.0..1.0),
                 )
                 .normalize()
-                    * MOTH_SPEED,
+                    * config.moth_speed,
             ),
         ));
     }
