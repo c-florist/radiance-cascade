@@ -5,6 +5,7 @@ use rand::Rng;
 
 pub fn flocking_system(
     config: Res<FlockingConfig>,
+    // TODO: Refactor out ParamSet queries
     mut queries: ParamSet<(
         Query<(Entity, &Transform, &mut Velocity), (With<Moth>, Without<LandedTimer>)>,
         Query<(Entity, &Transform, &Velocity), With<Moth>>,
@@ -14,7 +15,7 @@ pub fn flocking_system(
     let flock_snapshot: Vec<(Entity, Transform, Velocity)> = queries
         .p1()
         .iter()
-        .map(|(entity, transform, velocity)| (entity, *transform, velocity.clone()))
+        .map(|(entity, transform, velocity)| (entity, *transform, *velocity))
         .collect();
 
     let lantern_snapshot: Vec<(&Transform, &Lantern)> = lanterns.iter().collect();
@@ -327,7 +328,7 @@ mod tests {
                 moth1_transform,
                 Velocity(Vec3::new(1.0, 0.0, 0.0)),
             ),
-            (moth2_entity, moth2_transform, moth2_velocity.clone()),
+            (moth2_entity, moth2_transform, moth2_velocity),
         ];
         let config = FlockingConfig {
             perception_radius: 2.0,
@@ -358,7 +359,7 @@ mod tests {
                 moth1_transform,
                 Velocity(Vec3::new(1.0, 0.0, 0.0)),
             ),
-            (moth2_entity, moth2_transform, moth2_velocity.clone()),
+            (moth2_entity, moth2_transform, moth2_velocity),
         ];
         let config = FlockingConfig {
             perception_radius: 5.0,
