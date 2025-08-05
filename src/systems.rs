@@ -191,9 +191,9 @@ fn determine_landing_action(
         .min_by(|a, b| {
             moth_transform
                 .translation
-                .distance(a.translation)
-                .partial_cmp(&moth_transform.translation.distance(b.translation))
-                .unwrap()
+                .distance_squared(a.translation)
+                .partial_cmp(&moth_transform.translation.distance_squared(b.translation))
+                .unwrap_or(std::cmp::Ordering::Equal)
         })
         .unwrap();
 
