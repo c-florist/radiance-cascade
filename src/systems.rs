@@ -48,14 +48,18 @@ pub fn flocking_system(
     }
 }
 
+/// Calculate the boids for each moth in the "flock"
 fn calculate_flocking_forces(
     current_moth_entity: Entity,
     current_moth_transform: &Transform,
     flock_snapshot: &[(Entity, Transform, Velocity)],
     config: &FlockingConfig,
 ) -> (Vec3, Vec3, Vec3, u32) {
+    // Point away from neighbours to avoid crowding
     let mut separation = Vec3::ZERO;
+    // Average velocity/heading of neighbours
     let mut alignment = Vec3::ZERO;
+    // Average position of neighbours
     let mut cohesion = Vec3::ZERO;
     let mut local_flockmates = 0;
 
@@ -79,6 +83,8 @@ fn calculate_flocking_forces(
     (separation, alignment, cohesion, local_flockmates)
 }
 
+/// Given a moth's position, find the closest lantern and calculate the
+/// attraction force using the lantern's radiance as scale factor.
 fn calculate_attraction_force(
     moth_transform: &Transform,
     lantern_snapshot: &[(&Transform, &Lantern)],
@@ -92,9 +98,9 @@ fn calculate_attraction_force(
         .min_by(|(a, _), (b, _)| {
             moth_transform
                 .translation
-                .distance(a.translation)
-                .partial_cmp(&moth_transform.translation.distance(b.translation))
-                .unwrap()
+                .distance_squared(a.translation)
+                .partial_cmp(&moth_transform.translation.distance_squared(b.translation))
+                .unwrap_or(std::cmp::Ordering::Equal)
         })
         .unwrap();
 
