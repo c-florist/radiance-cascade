@@ -68,7 +68,7 @@ fn setup_scene(
             ..default()
         })),
         PointLight {
-            intensity: 100_000.0,
+            intensity: 200_000.0,
             shadows_enabled: true,
             color: lantern_glow_color,
             ..default()
