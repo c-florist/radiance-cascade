@@ -165,6 +165,14 @@ fn determine_takeoff_action(landed_timer: &mut LandedTimer, time: &Time) -> Moth
     }
 }
 
+fn should_land(is_close_enough: bool, random_roll_succeeded: bool) -> MothAction {
+    if is_close_enough && random_roll_succeeded {
+        MothAction::Land
+    } else {
+        MothAction::DoNothing
+    }
+}
+
 fn determine_landing_action(
     moth_transform: &Transform,
     lantern_transforms: &[&Transform],
@@ -186,11 +194,10 @@ fn determine_landing_action(
         .translation
         .distance(closest_lantern.translation);
 
-    if distance_to_lantern < config.landing_distance && rng.random_bool(config.landing_chance) {
-        MothAction::Land
-    } else {
-        MothAction::DoNothing
-    }
+    let is_close_enough = distance_to_lantern < config.landing_distance;
+    let random_roll_succeeded = rng.random_bool(config.landing_chance);
+
+    should_land(is_close_enough, random_roll_succeeded)
 }
 
 pub fn move_moths_system(
@@ -208,6 +215,7 @@ pub fn move_moths_system(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bevy::ecs::entity::Entity;
     use bevy::time::{Timer, TimerMode};
     use std::time::Duration;
 
@@ -215,7 +223,7 @@ mod tests {
     fn test_determine_takeoff_action_when_timer_is_finished() {
         let mut timer = LandedTimer(Timer::from_seconds(1.0, TimerMode::Once));
         let mut time = Time::default();
-        time.advance_by(Duration::from_secs(2)); // Finish the timer
+        time.advance_by(Duration::from_secs(2));
 
         let action = determine_takeoff_action(&mut timer, &time);
         assert_eq!(action, MothAction::TakeOff);
@@ -225,9 +233,144 @@ mod tests {
     fn test_determine_takeoff_action_when_timer_is_not_finished() {
         let mut timer = LandedTimer(Timer::from_seconds(2.0, TimerMode::Once));
         let mut time = Time::default();
-        time.advance_by(Duration::from_secs(1)); // Don't finish the timer
+        time.advance_by(Duration::from_secs(1));
 
         let action = determine_takeoff_action(&mut timer, &time);
         assert_eq!(action, MothAction::DoNothing);
+    }
+
+    #[test]
+    fn test_calculate_attraction_force_no_lanterns() {
+        let moth_transform = Transform::from_translation(Vec3::new(0.0, 0.0, 0.0));
+        let lantern_snapshot = vec![];
+        let force = calculate_attraction_force(&moth_transform, &lantern_snapshot);
+        assert_eq!(force, Vec3::ZERO);
+    }
+
+    #[test]
+    fn test_calculate_attraction_force_one_lantern() {
+        let moth_transform = Transform::from_translation(Vec3::new(0.0, 0.0, 0.0));
+        let lantern_transform = Transform::from_translation(Vec3::new(10.0, 0.0, 0.0));
+        let lantern = Lantern { radiance: 1.0 };
+        let lantern_snapshot = vec![(&lantern_transform, &lantern)];
+        let force = calculate_attraction_force(&moth_transform, &lantern_snapshot);
+        assert_eq!(force, Vec3::new(1.0, 0.0, 0.0));
+    }
+
+    #[test]
+    fn test_calculate_attraction_force_multiple_lanterns() {
+        let moth_transform = Transform::from_translation(Vec3::new(0.0, 0.0, 0.0));
+        let close_lantern_transform = Transform::from_translation(Vec3::new(10.0, 0.0, 0.0));
+        let close_lantern = Lantern { radiance: 1.0 };
+        let far_lantern_transform = Transform::from_translation(Vec3::new(-20.0, 0.0, 0.0));
+        let far_lantern = Lantern { radiance: 1.0 };
+        let lantern_snapshot = vec![
+            (&close_lantern_transform, &close_lantern),
+            (&far_lantern_transform, &far_lantern),
+        ];
+        let force = calculate_attraction_force(&moth_transform, &lantern_snapshot);
+        assert_eq!(force, Vec3::new(1.0, 0.0, 0.0));
+    }
+
+    #[test]
+    fn test_should_land_true_true() {
+        assert_eq!(should_land(true, true), MothAction::Land);
+    }
+
+    #[test]
+    fn test_should_land_true_false() {
+        assert_eq!(should_land(true, false), MothAction::DoNothing);
+    }
+
+    #[test]
+    fn test_should_land_false_true() {
+        assert_eq!(should_land(false, true), MothAction::DoNothing);
+    }
+
+    #[test]
+    fn test_should_land_false_false() {
+        assert_eq!(should_land(false, false), MothAction::DoNothing);
+    }
+
+    #[test]
+    fn test_calculate_flocking_forces_no_flockmates() {
+        let moth_entity = Entity::from_raw(0);
+        let moth_transform = Transform::from_translation(Vec3::new(0.0, 0.0, 0.0));
+        let flock_snapshot = vec![(
+            moth_entity,
+            moth_transform,
+            Velocity(Vec3::new(1.0, 0.0, 0.0)),
+        )];
+        let config = FlockingConfig::default();
+
+        let (separation, alignment, cohesion, local_flockmates) =
+            calculate_flocking_forces(moth_entity, &moth_transform, &flock_snapshot, &config);
+
+        assert_eq!(separation, Vec3::ZERO);
+        assert_eq!(alignment, Vec3::ZERO);
+        assert_eq!(cohesion, Vec3::ZERO);
+        assert_eq!(local_flockmates, 0);
+    }
+
+    #[test]
+    fn test_calculate_flocking_forces_one_flockmate() {
+        let moth1_entity = Entity::from_raw(0);
+        let moth1_transform = Transform::from_translation(Vec3::new(0.0, 0.0, 0.0));
+
+        let moth2_entity = Entity::from_raw(1);
+        let moth2_transform = Transform::from_translation(Vec3::new(1.0, 0.0, 0.0));
+        let moth2_velocity = Velocity(Vec3::new(1.0, 0.0, 0.0));
+
+        let flock_snapshot = vec![
+            (
+                moth1_entity,
+                moth1_transform,
+                Velocity(Vec3::new(1.0, 0.0, 0.0)),
+            ),
+            (moth2_entity, moth2_transform, moth2_velocity.clone()),
+        ];
+        let config = FlockingConfig {
+            perception_radius: 2.0,
+            ..Default::default()
+        };
+
+        let (separation, alignment, cohesion, local_flockmates) =
+            calculate_flocking_forces(moth1_entity, &moth1_transform, &flock_snapshot, &config);
+
+        assert_eq!(separation, Vec3::new(-1.0, 0.0, 0.0));
+        assert_eq!(alignment, moth2_velocity.0);
+        assert_eq!(cohesion, moth2_transform.translation);
+        assert_eq!(local_flockmates, 1);
+    }
+
+    #[test]
+    fn test_calculate_flocking_forces_one_flockmate_outside_perception_radius() {
+        let moth1_entity = Entity::from_raw(0);
+        let moth1_transform = Transform::from_translation(Vec3::new(0.0, 0.0, 0.0));
+
+        let moth2_entity = Entity::from_raw(1);
+        let moth2_transform = Transform::from_translation(Vec3::new(10.0, 0.0, 0.0));
+        let moth2_velocity = Velocity(Vec3::new(1.0, 0.0, 0.0));
+
+        let flock_snapshot = vec![
+            (
+                moth1_entity,
+                moth1_transform,
+                Velocity(Vec3::new(1.0, 0.0, 0.0)),
+            ),
+            (moth2_entity, moth2_transform, moth2_velocity.clone()),
+        ];
+        let config = FlockingConfig {
+            perception_radius: 5.0,
+            ..Default::default()
+        };
+
+        let (separation, alignment, cohesion, local_flockmates) =
+            calculate_flocking_forces(moth1_entity, &moth1_transform, &flock_snapshot, &config);
+
+        assert_eq!(separation, Vec3::ZERO);
+        assert_eq!(alignment, Vec3::ZERO);
+        assert_eq!(cohesion, Vec3::ZERO);
+        assert_eq!(local_flockmates, 0);
     }
 }
