@@ -23,7 +23,7 @@ impl Default for FlockingConfig {
     fn default() -> Self {
         Self {
             moth_count: 150,
-            moth_speed: 2.5,
+            moth_speed: 1.0,
             perception_radius: 1.0,
             separation_weight: 0.3,
             alignment_weight: 0.15,

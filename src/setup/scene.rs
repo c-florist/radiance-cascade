@@ -35,6 +35,6 @@ pub fn setup_lights_and_camera(mut commands: Commands) {
         },
         Camera3d { ..default() },
         Bloom::default(),
-        Transform::from_xyz(0.0, 2.5, 8.0).looking_at(Vec3::new(0.0, 2.0, 0.0), Vec3::Y),
+        Transform::from_xyz(0.0, 2.5, 16.0).looking_at(Vec3::new(0.0, 2.0, 0.0), Vec3::Y),
     ));
 }
