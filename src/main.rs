@@ -1,16 +1,13 @@
-use bevy::core_pipeline::bloom::Bloom;
 use bevy::prelude::*;
-use bevy::window::PrimaryWindow;
-use rand::Rng;
-use std::f32::consts::PI;
 use std::panic;
 
-use crate::components::{Lantern, Moth, Velocity, Wall};
 use crate::config::FlockingConfig;
+use crate::setup::{setup_lanterns, setup_lights_and_camera, setup_moths, setup_wall};
 use crate::systems::{moth_flocking_system, moth_landing_system, moth_movement_system};
 
 mod components;
 mod config;
+mod setup;
 mod systems;
 
 fn main() {
@@ -19,7 +16,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
-                title: "Radiance Cascade".into(),
+                title: "Radiance cascade".into(),
                 canvas: Some("#bevy".to_owned()),
                 fit_canvas_to_parent: true,
                 ..default()
@@ -29,7 +26,13 @@ fn main() {
         .insert_resource(FlockingConfig::default())
         .add_systems(
             Startup,
-            (setup_wall, setup_lights_and_camera, setup_moths).chain(),
+            (
+                setup_wall,
+                setup_lights_and_camera,
+                setup_lanterns,
+                setup_moths,
+            )
+                .chain(),
         )
         .add_systems(
             Update,
@@ -41,101 +44,4 @@ fn main() {
                 .chain(),
         )
         .run();
-}
-
-fn setup_wall(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    window_query: Query<&Window, With<PrimaryWindow>>,
-) {
-    let window = window_query.single().expect("No primary window found");
-
-    commands.spawn((
-        Mesh3d(
-            meshes.add(
-                Plane3d::default()
-                    .mesh()
-                    .size(window.width(), window.height()),
-            ),
-        ),
-        MeshMaterial3d(materials.add(StandardMaterial {
-            base_color: Color::srgb(0.1, 0.1, 0.15),
-            perceptual_roughness: 0.8,
-            ..default()
-        })),
-        Transform::from_rotation(Quat::from_rotation_x(PI / 2.0)),
-        Wall,
-    ));
-}
-
-fn setup_lights_and_camera(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
-    commands.insert_resource(AmbientLight {
-        color: Color::WHITE,
-        brightness: 0.1,
-        affects_lightmapped_meshes: false,
-    });
-
-    let lantern_glow_color = Color::srgb(1.0, 0.5, 0.0);
-    commands.spawn((
-        Mesh3d(meshes.add(Cuboid::new(0.5, 0.5, 0.5))),
-        MeshMaterial3d(materials.add(StandardMaterial {
-            base_color: Color::srgb(0.8, 0.7, 0.6),
-            emissive: lantern_glow_color.to_linear() * 100.0,
-            ..default()
-        })),
-        PointLight {
-            intensity: 200_000.0,
-            shadows_enabled: true,
-            color: lantern_glow_color,
-            ..default()
-        },
-        Transform::from_xyz(0.0, 1.0, 0.5),
-        Lantern { radiance: 15.0 },
-    ));
-
-    commands.spawn((
-        Camera {
-            hdr: true,
-            ..default()
-        },
-        Camera3d { ..default() },
-        Bloom::default(),
-        Transform::from_xyz(0.0, 2.5, 8.0).looking_at(Vec3::new(0.0, 2.0, 0.0), Vec3::Y),
-    ));
-}
-
-pub fn setup_moths(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    config: Res<FlockingConfig>,
-) {
-    let mut rng = rand::rng();
-
-    for _ in 0..config.moth_count {
-        commands.spawn((
-            Mesh3d(meshes.add(Cone::new(0.05, 0.1))),
-            MeshMaterial3d(materials.add(Color::srgb(0.9, 0.9, 0.8))),
-            Transform::from_xyz(
-                rng.random_range(-5.0..5.0),
-                rng.random_range(0.5..4.0),
-                rng.random_range(1.0..5.0),
-            ),
-            Moth,
-            Velocity(
-                Vec3::new(
-                    rng.random_range(-1.0..1.0),
-                    rng.random_range(-1.0..1.0),
-                    rng.random_range(-1.0..1.0),
-                )
-                .normalize()
-                    * config.moth_speed,
-            ),
-        ));
-    }
 }

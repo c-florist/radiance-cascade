@@ -1,6 +1,5 @@
 use bevy::prelude::Resource;
 
-/// A resource to hold all flocking-related configuration values.
 #[derive(Resource)]
 pub struct FlockingConfig {
     // --- Moths ---
