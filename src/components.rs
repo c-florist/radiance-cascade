@@ -13,3 +13,6 @@ pub struct Lantern {
 
 #[derive(Component)]
 pub struct LandedTimer(pub Timer);
+
+#[derive(Component)]
+pub struct Wall;

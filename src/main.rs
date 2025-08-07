@@ -1,10 +1,11 @@
 use bevy::core_pipeline::bloom::Bloom;
 use bevy::prelude::*;
+use bevy::window::PrimaryWindow;
 use rand::Rng;
 use std::f32::consts::PI;
 use std::panic;
 
-use crate::components::{Lantern, Moth, Velocity};
+use crate::components::{Lantern, Moth, Velocity, Wall};
 use crate::config::FlockingConfig;
 use crate::systems::*;
 
@@ -26,7 +27,10 @@ fn main() {
             ..default()
         }))
         .insert_resource(FlockingConfig::default())
-        .add_systems(Startup, (setup_scene, setup_moths).chain())
+        .add_systems(
+            Startup,
+            (setup_wall, setup_lights_and_camera, setup_moths).chain(),
+        )
         .add_systems(
             Update,
             (moth_landing_system, flocking_system, move_moths_system).chain(),
@@ -34,32 +38,44 @@ fn main() {
         .run();
 }
 
-fn setup_scene(
+fn setup_wall(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    window_query: Query<&Window, With<PrimaryWindow>>,
 ) {
-    // Ambient light
-    commands.insert_resource(AmbientLight {
-        color: Color::WHITE,
-        brightness: 0.02,
-        affects_lightmapped_meshes: false,
-    });
+    let window = window_query.single().expect("No primary window found");
 
-    // Wall
     commands.spawn((
-        Mesh3d(meshes.add(Plane3d::default().mesh().size(20.0, 20.0))),
+        Mesh3d(
+            meshes.add(
+                Plane3d::default()
+                    .mesh()
+                    .size(window.width(), window.height()),
+            ),
+        ),
         MeshMaterial3d(materials.add(StandardMaterial {
             base_color: Color::srgb(0.1, 0.1, 0.15),
             perceptual_roughness: 0.8,
             ..default()
         })),
         Transform::from_rotation(Quat::from_rotation_x(PI / 2.0)),
+        Wall,
     ));
+}
+
+fn setup_lights_and_camera(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    commands.insert_resource(AmbientLight {
+        color: Color::WHITE,
+        brightness: 0.1,
+        affects_lightmapped_meshes: false,
+    });
 
     let lantern_glow_color = Color::srgb(1.0, 0.5, 0.0);
-
-    // Lantern
     commands.spawn((
         Mesh3d(meshes.add(Cuboid::new(0.5, 0.5, 0.5))),
         MeshMaterial3d(materials.add(StandardMaterial {
@@ -77,7 +93,6 @@ fn setup_scene(
         Lantern { radiance: 15.0 },
     ));
 
-    // Camera
     commands.spawn((
         Camera {
             hdr: true,
