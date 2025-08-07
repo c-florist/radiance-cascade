@@ -7,7 +7,7 @@ use std::panic;
 
 use crate::components::{Lantern, Moth, Velocity, Wall};
 use crate::config::FlockingConfig;
-use crate::systems::*;
+use crate::systems::{moth_flocking_system, moth_landing_system, moth_movement_system};
 
 mod components;
 mod config;
@@ -33,7 +33,12 @@ fn main() {
         )
         .add_systems(
             Update,
-            (moth_landing_system, flocking_system, move_moths_system).chain(),
+            (
+                moth_landing_system,
+                moth_flocking_system,
+                moth_movement_system,
+            )
+                .chain(),
         )
         .run();
 }

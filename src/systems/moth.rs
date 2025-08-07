@@ -3,7 +3,14 @@ use crate::config::FlockingConfig;
 use bevy::prelude::*;
 use rand::Rng;
 
-pub fn flocking_system(
+#[derive(PartialEq, Debug)]
+enum MothAction {
+    TakeOff,
+    Land,
+    DoNothing,
+}
+
+pub fn moth_flocking_system(
     config: Res<FlockingConfig>,
     // TODO: Refactor out ParamSet queries
     mut queries: ParamSet<(
@@ -156,13 +163,6 @@ pub fn moth_landing_system(
     }
 }
 
-#[derive(PartialEq, Debug)]
-enum MothAction {
-    TakeOff,
-    Land,
-    DoNothing,
-}
-
 fn determine_takeoff_action(landed_timer: &mut LandedTimer, time: &Time) -> MothAction {
     landed_timer.0.tick(time.delta());
     if landed_timer.0.finished() {
@@ -207,7 +207,7 @@ fn determine_landing_action(
     should_land(is_close_enough, random_roll_succeeded)
 }
 
-pub fn move_moths_system(
+pub fn moth_movement_system(
     mut query: Query<(&mut Transform, &Velocity), With<Moth>>,
     time: Res<Time>,
 ) {
