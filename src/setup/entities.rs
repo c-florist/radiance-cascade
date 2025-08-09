@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use rand::Rng;
 
 use crate::components::{Lantern, Moth, Velocity, Wall};
-use crate::config::FlockingConfig;
+use crate::config::MothConfig;
 
 pub fn setup_lanterns(
     mut commands: Commands,
@@ -50,7 +50,7 @@ pub fn setup_moths(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    config: Res<FlockingConfig>,
+    config: Res<MothConfig>,
 ) {
     let mut rng = rand::rng();
 

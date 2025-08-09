@@ -1,8 +1,7 @@
 use bevy::prelude::Resource;
 
 #[derive(Resource)]
-pub struct FlockingConfig {
-    // --- Moths ---
+pub struct MothConfig {
     pub moth_count: usize,
     pub moth_speed: f32,
 
@@ -19,7 +18,7 @@ pub struct FlockingConfig {
     pub landed_duration_secs: f32,
 }
 
-impl Default for FlockingConfig {
+impl Default for MothConfig {
     fn default() -> Self {
         Self {
             moth_count: 150,

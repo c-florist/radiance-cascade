@@ -1,5 +1,5 @@
 use crate::components::{LandedTimer, Lantern, Moth, Velocity};
-use crate::config::FlockingConfig;
+use crate::config::MothConfig;
 use bevy::prelude::*;
 use rand::Rng;
 
@@ -11,7 +11,7 @@ enum MothAction {
 }
 
 pub fn moth_flocking_system(
-    config: Res<FlockingConfig>,
+    config: Res<MothConfig>,
     // TODO: Refactor out ParamSet queries
     mut queries: ParamSet<(
         Query<(Entity, &Transform, &mut Velocity), (With<Moth>, Without<LandedTimer>)>,
@@ -60,7 +60,7 @@ fn calculate_flocking_forces(
     current_moth_entity: Entity,
     current_moth_transform: &Transform,
     flock_snapshot: &[(Entity, Transform, Velocity)],
-    config: &FlockingConfig,
+    config: &MothConfig,
 ) -> (Vec3, Vec3, Vec3, u32) {
     // Point away from neighbours to avoid crowding
     let mut separation = Vec3::ZERO;
@@ -68,6 +68,7 @@ fn calculate_flocking_forces(
     let mut alignment = Vec3::ZERO;
     // Average position of neighbours
     let mut cohesion = Vec3::ZERO;
+
     let mut local_flockmates = 0;
 
     for (other_moth_entity, other_moth_transform, other_moth_velocity) in flock_snapshot {
@@ -119,7 +120,7 @@ fn calculate_attraction_force(
 pub fn moth_landing_system(
     mut commands: Commands,
     time: Res<Time>,
-    config: Res<FlockingConfig>,
+    config: Res<MothConfig>,
     lanterns: Query<&Transform, With<Lantern>>,
     mut moths: Query<(Entity, &Transform, &mut Velocity, Option<&mut LandedTimer>), With<Moth>>,
 ) {
@@ -183,7 +184,7 @@ fn should_land(is_close_enough: bool, random_roll_succeeded: bool) -> MothAction
 fn determine_landing_action(
     moth_transform: &Transform,
     lantern_transforms: &[&Transform],
-    config: &FlockingConfig,
+    config: &MothConfig,
     rng: &mut impl Rng,
 ) -> MothAction {
     let closest_lantern = lantern_transforms
@@ -308,7 +309,7 @@ mod tests {
             moth_transform,
             Velocity(Vec3::new(1.0, 0.0, 0.0)),
         )];
-        let config = FlockingConfig::default();
+        let config = MothConfig::default();
 
         let (separation, alignment, cohesion, local_flockmates) =
             calculate_flocking_forces(moth_entity, &moth_transform, &flock_snapshot, &config);
@@ -336,7 +337,7 @@ mod tests {
             ),
             (moth2_entity, moth2_transform, moth2_velocity),
         ];
-        let config = FlockingConfig {
+        let config = MothConfig {
             perception_radius: 2.0,
             ..Default::default()
         };
@@ -367,7 +368,7 @@ mod tests {
             ),
             (moth2_entity, moth2_transform, moth2_velocity),
         ];
-        let config = FlockingConfig {
+        let config = MothConfig {
             perception_radius: 5.0,
             ..Default::default()
         };
