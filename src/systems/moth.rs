@@ -26,6 +26,15 @@ pub fn moth_wander_system(
         .collect();
 
     for (transform, mut velocity) in queries.p0().iter_mut() {
+        if velocity.0 == Vec3::ZERO {
+            velocity.0 = Vec3::new(
+                rng.random_range(-1.0..1.0),
+                rng.random_range(-1.0..1.0),
+                rng.random_range(-1.0..1.0),
+            )
+            .normalize_or_zero();
+        }
+
         let wander_force = (Vec3::new(
             rng.random_range(-1.0..1.0),
             rng.random_range(-1.0..1.0),
