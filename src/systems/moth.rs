@@ -1,5 +1,5 @@
 use crate::components::{LandedTimer, Lantern, Moth, Velocity};
-use crate::config::MothConfig;
+use crate::config::{LanternConfig, MothConfig};
 use bevy::prelude::*;
 use rand::Rng;
 
@@ -11,7 +11,8 @@ enum MothAction {
 }
 
 pub fn moth_wander_system(
-    config: Res<MothConfig>,
+    moth_config: Res<MothConfig>,
+    lantern_config: Res<LanternConfig>,
     mut queries: ParamSet<(
         Query<(&Transform, &mut Velocity), (With<Moth>, Without<LandedTimer>)>,
         Query<(&Transform, &Velocity), With<Moth>>,
@@ -41,12 +42,12 @@ pub fn moth_wander_system(
             rng.random_range(-1.0..1.0),
         )
         .normalize_or_zero()
-            * config.wander_factor)
+            * moth_config.wander_factor)
             .normalize_or_zero();
 
-        let attraction = calculate_attraction_force(transform, &active_lanterns);
-        velocity.0 += attraction * config.attraction_weight + wander_force;
-        velocity.0 = velocity.0.normalize_or_zero() * config.moth_speed;
+        let attraction = calculate_attraction_force(transform, &active_lanterns, &lantern_config);
+        velocity.0 += attraction * moth_config.attraction_weight + wander_force;
+        velocity.0 = velocity.0.normalize_or_zero() * moth_config.moth_speed;
     }
 }
 
@@ -55,6 +56,7 @@ pub fn moth_wander_system(
 fn calculate_attraction_force(
     moth_transform: &Transform,
     lantern_snapshot: &[(&Transform, &Lantern)],
+    lantern_config: &LanternConfig,
 ) -> Vec3 {
     if lantern_snapshot.is_empty() {
         return Vec3::ZERO;
@@ -192,6 +194,7 @@ mod tests {
         // Setup
         let mut app = App::new();
         app.insert_resource(MothConfig::default());
+        app.insert_resource(LanternConfig::default());
         app.add_systems(Update, moth_wander_system);
 
         let moth_entity = app
@@ -231,7 +234,8 @@ mod tests {
     fn test_calculate_attraction_force_no_lanterns() {
         let moth_transform = Transform::from_translation(Vec3::new(0.0, 0.0, 0.0));
         let lantern_snapshot = vec![];
-        let force = calculate_attraction_force(&moth_transform, &lantern_snapshot);
+        let lantern_config = LanternConfig::default();
+        let force = calculate_attraction_force(&moth_transform, &lantern_snapshot, &lantern_config);
         assert_eq!(force, Vec3::ZERO);
     }
 
@@ -246,7 +250,8 @@ mod tests {
             grid_pos: (1, 1),
         };
         let lantern_snapshot = vec![(&lantern_transform, &lantern)];
-        let force = calculate_attraction_force(&moth_transform, &lantern_snapshot);
+        let lantern_config = LanternConfig::default();
+        let force = calculate_attraction_force(&moth_transform, &lantern_snapshot, &lantern_config);
         assert_eq!(force, Vec3::new(1.0, 0.0, 0.0));
     }
 
@@ -271,7 +276,8 @@ mod tests {
             (&close_lantern_transform, &close_lantern),
             (&far_lantern_transform, &far_lantern),
         ];
-        let force = calculate_attraction_force(&moth_transform, &lantern_snapshot);
+        let lantern_config = LanternConfig::default();
+        let force = calculate_attraction_force(&moth_transform, &lantern_snapshot, &lantern_config);
         assert_eq!(force, Vec3::new(1.0, 0.0, 0.0));
     }
 
