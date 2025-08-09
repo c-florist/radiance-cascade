@@ -29,11 +29,10 @@ pub fn setup_lanterns(
                     Mesh3d(meshes.add(Cuboid::new(0.5, 0.5, 0.5))),
                     MeshMaterial3d(materials.add(StandardMaterial {
                         base_color: Color::srgb(0.8, 0.7, 0.6),
-                        emissive: lantern_glow_color.to_linear() * 100.0,
                         ..default()
                     })),
                     PointLight {
-                        intensity: rng.random_range(1000.0..8000.0),
+                        intensity: 0.0,
                         shadows_enabled: true,
                         color: lantern_glow_color,
                         ..default()
@@ -41,8 +40,8 @@ pub fn setup_lanterns(
                     Transform::from_xyz(x, y, wall_transform.translation.z + 0.5),
                     Lantern {
                         radiance: 15.0,
-                        is_on: true,
-                        timer: Timer::from_seconds(rng.random_range(5.0..10.0), TimerMode::Once),
+                        is_on: false,
+                        timer: Timer::from_seconds(rng.random_range(80.0..120.0), TimerMode::Once),
                         grid_pos: (i, j),
                     },
                 ));
