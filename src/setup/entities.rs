@@ -39,7 +39,12 @@ pub fn setup_lanterns(
                         ..default()
                     },
                     Transform::from_xyz(x, y, wall_transform.translation.z + 0.5),
-                    Lantern { radiance: 15.0 },
+                    Lantern {
+                        radiance: 15.0,
+                        is_on: true,
+                        timer: Timer::from_seconds(rng.random_range(5.0..10.0), TimerMode::Once),
+                        grid_pos: (i, j),
+                    },
                 ));
             }
         }

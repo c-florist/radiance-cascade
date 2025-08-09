@@ -259,7 +259,12 @@ mod tests {
     fn test_calculate_attraction_force_one_lantern() {
         let moth_transform = Transform::from_translation(Vec3::new(0.0, 0.0, 0.0));
         let lantern_transform = Transform::from_translation(Vec3::new(10.0, 0.0, 0.0));
-        let lantern = Lantern { radiance: 1.0 };
+        let lantern = Lantern {
+            radiance: 1.0,
+            is_on: true,
+            timer: Timer::from_seconds(1.0, TimerMode::Once),
+            grid_pos: (1, 1),
+        };
         let lantern_snapshot = vec![(&lantern_transform, &lantern)];
         let force = calculate_attraction_force(&moth_transform, &lantern_snapshot);
         assert_eq!(force, Vec3::new(1.0, 0.0, 0.0));
@@ -269,9 +274,19 @@ mod tests {
     fn test_calculate_attraction_force_multiple_lanterns() {
         let moth_transform = Transform::from_translation(Vec3::new(0.0, 0.0, 0.0));
         let close_lantern_transform = Transform::from_translation(Vec3::new(10.0, 0.0, 0.0));
-        let close_lantern = Lantern { radiance: 1.0 };
+        let close_lantern = Lantern {
+            radiance: 1.0,
+            is_on: true,
+            timer: Timer::from_seconds(1.0, TimerMode::Once),
+            grid_pos: (1, 1),
+        };
         let far_lantern_transform = Transform::from_translation(Vec3::new(-20.0, 0.0, 0.0));
-        let far_lantern = Lantern { radiance: 1.0 };
+        let far_lantern = Lantern {
+            radiance: 1.0,
+            is_on: true,
+            timer: Timer::from_seconds(1.0, TimerMode::Once),
+            grid_pos: (5, 5),
+        };
         let lantern_snapshot = vec![
             (&close_lantern_transform, &close_lantern),
             (&far_lantern_transform, &far_lantern),
