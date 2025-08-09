@@ -10,88 +10,24 @@ enum MothAction {
     DoNothing,
 }
 
-pub fn moth_flocking_system(
+pub fn moth_wander_system(
     config: Res<MothConfig>,
-    // TODO: Refactor out ParamSet queries
     mut queries: ParamSet<(
         Query<(Entity, &Transform, &mut Velocity), (With<Moth>, Without<LandedTimer>)>,
         Query<(Entity, &Transform, &Velocity), With<Moth>>,
     )>,
     lanterns: Query<(&Transform, &Lantern)>,
 ) {
-    let flock_snapshot: Vec<(Entity, Transform, Velocity)> = queries
-        .p1()
-        .iter()
-        .map(|(entity, transform, velocity)| (entity, *transform, *velocity))
-        .collect();
-
     let active_lanterns: Vec<(&Transform, &Lantern)> = lanterns
         .iter()
         .filter(|(_, lantern)| lantern.is_on)
         .collect();
 
-    for (moth_entity, moth_transform, mut velocity) in queries.p0().iter_mut() {
-        let (separation, alignment, cohesion, local_flockmates) =
-            calculate_flocking_forces(moth_entity, moth_transform, &flock_snapshot, &config);
-
+    for (_moth_entity, moth_transform, mut velocity) in queries.p0().iter_mut() {
         let attraction = calculate_attraction_force(moth_transform, &active_lanterns);
-
-        let mut final_velocity = velocity.0;
-
-        if local_flockmates > 0 {
-            let avg_alignment = alignment / local_flockmates as f32;
-            let avg_cohesion = cohesion / local_flockmates as f32;
-
-            let alignment_steering =
-                (avg_alignment.normalize_or_zero() * config.moth_speed) - final_velocity;
-            let cohesion_steering = (avg_cohesion - moth_transform.translation).normalize_or_zero()
-                * config.moth_speed
-                - final_velocity;
-
-            final_velocity += separation * config.separation_weight;
-            final_velocity += alignment_steering * config.alignment_weight;
-            final_velocity += cohesion_steering * config.cohesion_weight;
-        }
-
-        final_velocity += attraction * config.attraction_weight;
-        velocity.0 = final_velocity.normalize_or_zero() * config.moth_speed;
+        velocity.0 += attraction * config.attraction_weight;
+        velocity.0 = velocity.0.normalize_or_zero() * config.moth_speed;
     }
-}
-
-/// Calculate the boids for each moth in the "flock"
-fn calculate_flocking_forces(
-    current_moth_entity: Entity,
-    current_moth_transform: &Transform,
-    flock_snapshot: &[(Entity, Transform, Velocity)],
-    config: &MothConfig,
-) -> (Vec3, Vec3, Vec3, u32) {
-    // Point away from neighbours to avoid crowding
-    let mut separation = Vec3::ZERO;
-    // Average velocity/heading of neighbours
-    let mut alignment = Vec3::ZERO;
-    // Average position of neighbours
-    let mut cohesion = Vec3::ZERO;
-
-    let mut local_flockmates = 0;
-
-    for (other_moth_entity, other_moth_transform, other_moth_velocity) in flock_snapshot {
-        if current_moth_entity == *other_moth_entity {
-            continue;
-        }
-
-        let distance = current_moth_transform
-            .translation
-            .distance(other_moth_transform.translation);
-
-        if distance > 0.0 && distance < config.perception_radius {
-            separation += (current_moth_transform.translation - other_moth_transform.translation)
-                / distance.powi(2);
-            alignment += other_moth_velocity.0;
-            cohesion += other_moth_transform.translation;
-            local_flockmates += 1;
-        }
-    }
-    (separation, alignment, cohesion, local_flockmates)
 }
 
 /// Given a moth's position, find the closest lantern and calculate the
@@ -316,87 +252,5 @@ mod tests {
     #[test]
     fn test_should_land_false_false() {
         assert_eq!(should_land(false, false), MothAction::DoNothing);
-    }
-
-    #[test]
-    fn test_calculate_flocking_forces_no_flockmates() {
-        let moth_entity = Entity::from_raw(0);
-        let moth_transform = Transform::from_translation(Vec3::new(0.0, 0.0, 0.0));
-        let flock_snapshot = vec![(
-            moth_entity,
-            moth_transform,
-            Velocity(Vec3::new(1.0, 0.0, 0.0)),
-        )];
-        let config = MothConfig::default();
-
-        let (separation, alignment, cohesion, local_flockmates) =
-            calculate_flocking_forces(moth_entity, &moth_transform, &flock_snapshot, &config);
-
-        assert_eq!(separation, Vec3::ZERO);
-        assert_eq!(alignment, Vec3::ZERO);
-        assert_eq!(cohesion, Vec3::ZERO);
-        assert_eq!(local_flockmates, 0);
-    }
-
-    #[test]
-    fn test_calculate_flocking_forces_one_flockmate() {
-        let moth1_entity = Entity::from_raw(0);
-        let moth1_transform = Transform::from_translation(Vec3::new(0.0, 0.0, 0.0));
-
-        let moth2_entity = Entity::from_raw(1);
-        let moth2_transform = Transform::from_translation(Vec3::new(1.0, 0.0, 0.0));
-        let moth2_velocity = Velocity(Vec3::new(1.0, 0.0, 0.0));
-
-        let flock_snapshot = vec![
-            (
-                moth1_entity,
-                moth1_transform,
-                Velocity(Vec3::new(1.0, 0.0, 0.0)),
-            ),
-            (moth2_entity, moth2_transform, moth2_velocity),
-        ];
-        let config = MothConfig {
-            perception_radius: 2.0,
-            ..Default::default()
-        };
-
-        let (separation, alignment, cohesion, local_flockmates) =
-            calculate_flocking_forces(moth1_entity, &moth1_transform, &flock_snapshot, &config);
-
-        assert_eq!(separation, Vec3::new(-1.0, 0.0, 0.0));
-        assert_eq!(alignment, moth2_velocity.0);
-        assert_eq!(cohesion, moth2_transform.translation);
-        assert_eq!(local_flockmates, 1);
-    }
-
-    #[test]
-    fn test_calculate_flocking_forces_one_flockmate_outside_perception_radius() {
-        let moth1_entity = Entity::from_raw(0);
-        let moth1_transform = Transform::from_translation(Vec3::new(0.0, 0.0, 0.0));
-
-        let moth2_entity = Entity::from_raw(1);
-        let moth2_transform = Transform::from_translation(Vec3::new(10.0, 0.0, 0.0));
-        let moth2_velocity = Velocity(Vec3::new(1.0, 0.0, 0.0));
-
-        let flock_snapshot = vec![
-            (
-                moth1_entity,
-                moth1_transform,
-                Velocity(Vec3::new(1.0, 0.0, 0.0)),
-            ),
-            (moth2_entity, moth2_transform, moth2_velocity),
-        ];
-        let config = MothConfig {
-            perception_radius: 5.0,
-            ..Default::default()
-        };
-
-        let (separation, alignment, cohesion, local_flockmates) =
-            calculate_flocking_forces(moth1_entity, &moth1_transform, &flock_snapshot, &config);
-
-        assert_eq!(separation, Vec3::ZERO);
-        assert_eq!(alignment, Vec3::ZERO);
-        assert_eq!(cohesion, Vec3::ZERO);
-        assert_eq!(local_flockmates, 0);
     }
 }
