@@ -13,19 +13,30 @@ enum MothAction {
 pub fn moth_wander_system(
     config: Res<MothConfig>,
     mut queries: ParamSet<(
-        Query<(Entity, &Transform, &mut Velocity), (With<Moth>, Without<LandedTimer>)>,
-        Query<(Entity, &Transform, &Velocity), With<Moth>>,
+        Query<(&Transform, &mut Velocity), (With<Moth>, Without<LandedTimer>)>,
+        Query<(&Transform, &Velocity), With<Moth>>,
     )>,
     lanterns: Query<(&Transform, &Lantern)>,
 ) {
+    let mut rng = rand::rng();
+
     let active_lanterns: Vec<(&Transform, &Lantern)> = lanterns
         .iter()
         .filter(|(_, lantern)| lantern.is_on)
         .collect();
 
-    for (_moth_entity, moth_transform, mut velocity) in queries.p0().iter_mut() {
-        let attraction = calculate_attraction_force(moth_transform, &active_lanterns);
-        velocity.0 += attraction * config.attraction_weight;
+    for (transform, mut velocity) in queries.p0().iter_mut() {
+        let wander_force = (Vec3::new(
+            rng.random_range(-1.0..1.0),
+            rng.random_range(-1.0..1.0),
+            rng.random_range(-1.0..1.0),
+        )
+        .normalize_or_zero()
+            * config.wander_factor)
+            .normalize_or_zero();
+
+        let attraction = calculate_attraction_force(transform, &active_lanterns);
+        velocity.0 += attraction * config.attraction_weight + wander_force;
         velocity.0 = velocity.0.normalize_or_zero() * config.moth_speed;
     }
 }
@@ -162,9 +173,30 @@ pub fn moth_movement_system(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bevy::app::App;
     use bevy::ecs::entity::Entity;
     use bevy::time::{Timer, TimerMode};
     use std::time::Duration;
+
+    #[test]
+    fn test_moth_wander_system_gives_velocity_to_moth_with_zero_velocity() {
+        // Setup
+        let mut app = App::new();
+        app.insert_resource(MothConfig::default());
+        app.add_systems(Update, moth_wander_system);
+
+        let moth_entity = app
+            .world_mut()
+            .spawn((Moth, Transform::default(), Velocity(Vec3::ZERO)))
+            .id();
+
+        // Run the system
+        app.update();
+
+        // Check assertions
+        let moth_velocity = app.world().get::<Velocity>(moth_entity).unwrap();
+        assert_ne!(moth_velocity.0, Vec3::ZERO);
+    }
 
     #[test]
     fn test_determine_takeoff_action_when_timer_is_finished() {

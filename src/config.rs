@@ -22,7 +22,7 @@ impl Default for MothConfig {
             attraction_weight: 0.05,
             wander_factor: 0.1,
             landing_distance: 0.6,
-            landing_chance: 0.1,
+            landing_chance: 0.08,
             landed_duration_secs: 3.0,
         }
     }
