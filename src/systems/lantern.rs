@@ -1,3 +1,7 @@
+use crate::components::Lantern;
+use bevy::prelude::*;
+use rand::Rng;
+
 fn can_turn_on(pos: (i32, i32), grid: &[((i32, i32), bool)]) -> bool {
     let neighbors = [
         (pos.0 + 1, pos.1),
@@ -8,6 +12,56 @@ fn can_turn_on(pos: (i32, i32), grid: &[((i32, i32), bool)]) -> bool {
     !grid
         .iter()
         .any(|(grid_pos, is_on)| *is_on && neighbors.contains(grid_pos))
+}
+
+pub fn lantern_power_system(
+    mut lantern_query: Query<
+        (
+            &Mesh3d,
+            &mut MeshMaterial3d<StandardMaterial>,
+            &mut PointLight,
+            &mut Lantern,
+        ),
+        With<Lantern>,
+    >,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    time: Res<Time>,
+) {
+    const TURN_ON_CHANCE: f64 = 0.01;
+
+    let mut rng = rand::rng();
+    let mut grid_state: Vec<((i32, i32), bool)> = lantern_query
+        .iter()
+        .map(|(_, _, _, lantern)| (lantern.grid_pos, lantern.is_on))
+        .collect();
+
+    for (_, mut material, mut light, mut lantern) in lantern_query.iter_mut() {
+        if lantern.is_on {
+            lantern.timer.tick(time.delta());
+            if lantern.timer.finished() {
+                lantern.is_on = false;
+                light.intensity = 0.0;
+                if let Some(material) = materials.get_mut(&mut material.0) {
+                    material.emissive = Color::BLACK.to_linear();
+                }
+            }
+        } else if rng.random_bool(TURN_ON_CHANCE) {
+            if can_turn_on(lantern.grid_pos, &grid_state) {
+                lantern.is_on = true;
+                lantern.timer.reset();
+                light.intensity = rng.random_range(1000.0..8000.0);
+                if let Some(material) = materials.get_mut(&mut material.0) {
+                    material.emissive = Color::srgb(1.0, 0.5, 0.0).to_linear() * 100.0;
+                }
+                if let Some(grid_lantern) = grid_state
+                    .iter_mut()
+                    .find(|(pos, _)| *pos == lantern.grid_pos)
+                {
+                    grid_lantern.1 = true;
+                }
+            }
+        }
+    }
 }
 
 #[cfg(test)]
