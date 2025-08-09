@@ -25,13 +25,16 @@ pub fn moth_flocking_system(
         .map(|(entity, transform, velocity)| (entity, *transform, *velocity))
         .collect();
 
-    let lantern_snapshot: Vec<(&Transform, &Lantern)> = lanterns.iter().collect();
+    let active_lanterns: Vec<(&Transform, &Lantern)> = lanterns
+        .iter()
+        .filter(|(_, lantern)| lantern.is_on)
+        .collect();
 
     for (moth_entity, moth_transform, mut velocity) in queries.p0().iter_mut() {
         let (separation, alignment, cohesion, local_flockmates) =
             calculate_flocking_forces(moth_entity, moth_transform, &flock_snapshot, &config);
 
-        let attraction = calculate_attraction_force(moth_transform, &lantern_snapshot);
+        let attraction = calculate_attraction_force(moth_transform, &active_lanterns);
 
         let mut final_velocity = velocity.0;
 
