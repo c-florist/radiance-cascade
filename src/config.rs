@@ -29,8 +29,8 @@ impl Default for MothConfig {
             cohesion_weight: 0.1,
             attraction_weight: 0.05,
             landing_distance: 0.6,
-            landing_chance: 0.05,
-            landed_duration_secs: 2.5,
+            landing_chance: 0.1,
+            landed_duration_secs: 3.0,
         }
     }
 }

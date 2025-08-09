@@ -41,7 +41,7 @@ pub fn setup_lanterns(
                     Lantern {
                         radiance: 15.0,
                         is_on: false,
-                        timer: Timer::from_seconds(rng.random_range(80.0..120.0), TimerMode::Once),
+                        timer: Timer::from_seconds(rng.random_range(30.0..60.0), TimerMode::Once),
                         grid_pos: (i, j),
                     },
                 ));
