@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use crate::components::{Moth, Velocity};
 
 pub fn enforce_boundary_system(mut moth_query: Query<(&mut Transform, &mut Velocity), With<Moth>>) {
-    const WALL_SIZE: f32 = 20.0;
+    const WALL_SIZE: f32 = 10.0;
 
     for (mut transform, mut velocity) in moth_query.iter_mut() {
         if transform.translation.x.abs() > WALL_SIZE {

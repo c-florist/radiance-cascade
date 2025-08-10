@@ -65,7 +65,11 @@ pub fn setup_moths(
     for _ in 0..config.moth_count {
         commands.spawn((
             Mesh3d(meshes.add(Cone::new(0.05, 0.1))),
-            MeshMaterial3d(materials.add(Color::srgb(1.0, 1.0, 1.0))),
+            MeshMaterial3d(materials.add(StandardMaterial {
+                base_color: Color::srgb(1.0, 1.0, 1.0),
+                emissive: Color::srgb(1.0, 1.0, 1.0).to_linear() * 2.0,
+                ..default()
+            })),
             Transform::from_xyz(
                 rng.random_range(-5.0..5.0),
                 rng.random_range(0.5..4.0),
