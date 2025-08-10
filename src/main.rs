@@ -45,14 +45,16 @@ fn main() {
         .add_systems(
             Update,
             (
-                lantern_power_system,
-                moth_wander_system,
-                moth_attraction_system,
-                moth_collision_system,
-                enforce_boundary_system,
+                (
+                    moth_wander_system,
+                    moth_attraction_system,
+                    moth_collision_system,
+                    enforce_boundary_system,
+                )
+                    .chain(),
                 moth_movement_system,
-            )
-                .chain(),
+                lantern_power_system,
+            ),
         )
         .run();
 }

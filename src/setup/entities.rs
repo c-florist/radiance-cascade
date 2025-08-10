@@ -10,7 +10,7 @@ pub fn setup_lanterns(
     mut materials: ResMut<Assets<StandardMaterial>>,
     wall_query: Query<&Transform, With<Wall>>,
 ) {
-    const LANTERN_SPACING: f32 = 4.5;
+    const LANTERN_SPACING: f32 = 5.0;
     const WALL_SIZE: Vec2 = Vec2::new(20.0, 20.0);
     let mut rng = rand::rng();
 

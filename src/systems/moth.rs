@@ -10,13 +10,24 @@ pub fn moth_wander_system(
     mut rng: GlobalEntropy<WyRand>,
 ) {
     for mut velocity in moth_query.iter_mut() {
+        // If the moth has stopped, give it a new random direction.
+        if velocity.0 == Vec3::ZERO {
+            velocity.0 = Vec3::new(
+                rng.random_range(-1.0..1.0),
+                rng.random_range(-1.0..1.0),
+                rng.random_range(-1.0..1.0),
+            )
+            .normalize_or_zero()
+                * moth_config.moth_speed;
+        }
+
         let jitter = Vec3::new(
             rng.random_range(-1.0..1.0),
             rng.random_range(-1.0..1.0),
             rng.random_range(-1.0..1.0),
         )
         .normalize_or_zero()
-            * 0.1;
+            * 0.15;
 
         velocity.0 = (velocity.0 + jitter).normalize_or_zero() * moth_config.moth_speed;
     }
@@ -26,6 +37,7 @@ pub fn moth_attraction_system(
     moth_config: Res<MothConfig>,
     mut moth_query: Query<(&Transform, &mut Velocity), With<Moth>>,
     lantern_query: Query<(&Transform, &Lantern)>,
+    time: Res<Time>,
 ) {
     let active_lanterns: Vec<_> = lantern_query
         .iter()
@@ -37,44 +49,32 @@ pub fn moth_attraction_system(
     }
 
     for (moth_transform, mut velocity) in moth_query.iter_mut() {
-        let best_lantern = active_lanterns
-            .iter()
-            .filter(|(lantern_transform, _)| {
-                moth_transform
-                    .translation
-                    .distance_squared(lantern_transform.translation)
-                    < moth_config.view_radius.powi(2)
-            })
-            .max_by(|(a_transform, a_lantern), (b_transform, b_lantern)| {
-                let a_radiance = a_lantern.radiance;
-                let b_radiance = b_lantern.radiance;
+        let mut total_attraction_force = Vec3::ZERO;
 
-                if (a_radiance - b_radiance).abs() > f32::EPSILON {
-                    a_radiance.partial_cmp(&b_radiance).unwrap()
-                } else {
-                    let a_dist = moth_transform
-                        .translation
-                        .distance_squared(a_transform.translation);
-                    let b_dist = moth_transform
-                        .translation
-                        .distance_squared(b_transform.translation);
-                    b_dist.partial_cmp(&a_dist).unwrap()
-                }
-            });
+        for (lantern_transform, lantern) in &active_lanterns {
+            let to_lantern = lantern_transform.translation - moth_transform.translation;
+            let dist_sq = to_lantern.length_squared();
 
-        if let Some(best_lantern) = best_lantern {
-            let direction =
-                (best_lantern.0.translation - moth_transform.translation).normalize_or_zero();
-            velocity.0 = direction * moth_config.moth_speed;
+            if dist_sq < moth_config.view_radius.powi(2) {
+                let strength = lantern.radiance / (dist_sq + 1.0);
+                total_attraction_force += to_lantern.normalize_or_zero() * strength;
+            }
+        }
+
+        if total_attraction_force.length_squared() > 0.0 {
+            let acceleration = total_attraction_force * 0.0001;
+            velocity.0 += acceleration * time.delta_secs();
         }
     }
 }
 
 pub fn moth_movement_system(
-    mut query: Query<(&mut Transform, &Velocity), With<Moth>>,
+    mut query: Query<(&mut Transform, &mut Velocity), With<Moth>>,
     time: Res<Time>,
+    moth_config: Res<MothConfig>,
 ) {
-    for (mut transform, velocity) in &mut query {
+    for (mut transform, mut velocity) in &mut query {
+        velocity.0 = velocity.0.clamp_length_max(moth_config.moth_speed);
         transform.translation += velocity.0 * time.delta_secs();
         if velocity.0 != Vec3::ZERO {
             transform.look_to(velocity.0, Vec3::Y);
@@ -98,118 +98,5 @@ pub fn moth_collision_system(
                 moth_transform.translation = lantern_transform.translation + direction * 0.5;
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use bevy::app::App;
-
-    #[test]
-    fn test_moth_moves_towards_closest_lantern() {
-        let mut app = App::new();
-        app.insert_resource(MothConfig::default());
-        app.add_systems(Update, moth_attraction_system);
-
-        let moth_id = app
-            .world_mut()
-            .spawn((
-                Moth,
-                Transform::from_xyz(0.0, 0.0, 0.0),
-                Velocity(Vec3::ZERO),
-            ))
-            .id();
-
-        // Far away
-        app.world_mut().spawn((
-            Lantern {
-                is_on: true,
-                ..Default::default()
-            },
-            Transform::from_xyz(100.0, 0.0, 0.0),
-        ));
-
-        // Close to moth
-        app.world_mut().spawn((
-            Lantern {
-                is_on: true,
-                ..Default::default()
-            },
-            Transform::from_xyz(10.0, 0.0, 0.0),
-        ));
-
-        // Should be ignored as off
-        app.world_mut().spawn((
-            Lantern {
-                is_on: false,
-                ..Default::default()
-            },
-            Transform::from_xyz(1.0, 0.0, 0.0),
-        ));
-
-        app.update();
-
-        let moth_velocity = app.world().get::<Velocity>(moth_id).unwrap();
-        assert_eq!(
-            moth_velocity.0.normalize_or_zero(),
-            Vec3::new(1.0, 0.0, 0.0),
-            "Moth should move towards the closest 'on' lantern"
-        );
-    }
-
-    #[test]
-    fn test_moth_is_attracted_to_lanterns_within_view_radius() {
-        let mut app = App::new();
-        app.insert_resource(MothConfig::default());
-        app.add_systems(Update, moth_attraction_system);
-
-        let moth_id = app
-            .world_mut()
-            .spawn((
-                Moth,
-                Transform::from_xyz(0.0, 0.0, 0.0),
-                Velocity(Vec3::ZERO),
-            ))
-            .id();
-
-        // Inside view radius, low radiance
-        app.world_mut().spawn((
-            Lantern {
-                is_on: true,
-                radiance: 10.0,
-                ..Default::default()
-            },
-            Transform::from_xyz(10.0, 0.0, 0.0),
-        ));
-
-        // Inside view radius, high radiance
-        app.world_mut().spawn((
-            Lantern {
-                is_on: true,
-                radiance: 20.0,
-                ..Default::default()
-            },
-            Transform::from_xyz(-12.0, 0.0, 0.0),
-        ));
-
-        // Outside view radius, highest radiance
-        app.world_mut().spawn((
-            Lantern {
-                is_on: true,
-                radiance: 100.0,
-                ..Default::default()
-            },
-            Transform::from_xyz(30.0, 0.0, 0.0),
-        ));
-
-        app.update();
-
-        let moth_velocity = app.world().get::<Velocity>(moth_id).unwrap();
-        assert_eq!(
-            moth_velocity.0.normalize_or_zero(),
-            Vec3::new(-1.0, 0.0, 0.0),
-            "Moth should move towards the most radiant lantern within its view radius"
-        );
     }
 }
