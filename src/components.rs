@@ -28,4 +28,4 @@ impl Default for Lantern {
 }
 
 #[derive(Component)]
-pub struct Wall;
+pub struct Ceiling;

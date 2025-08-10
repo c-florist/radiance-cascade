@@ -5,11 +5,11 @@ use std::panic;
 use crate::config::{LanternConfig, MothConfig};
 use crate::resources::SpatialIndex;
 use crate::setup::{
-    setup_lantern_index, setup_lanterns, setup_lights_and_camera, setup_moths, setup_wall,
+    setup_ceiling, setup_lantern_index, setup_lanterns, setup_lights_and_camera, setup_moths,
 };
 use crate::systems::{
-    enforce_boundary_system, lantern_power_system, moth_attraction_system, moth_collision_system,
-    moth_movement_system, moth_wander_system,
+    camera_orbit_system, enforce_boundary_system, lantern_power_system, moth_attraction_system,
+    moth_collision_system, moth_movement_system, moth_wander_system,
 };
 
 mod components;
@@ -41,7 +41,7 @@ fn main() {
         .add_systems(
             Startup,
             (
-                setup_wall,
+                setup_ceiling,
                 setup_lights_and_camera,
                 setup_lanterns,
                 setup_moths,
@@ -61,6 +61,7 @@ fn main() {
                     .chain(),
                 moth_movement_system,
                 lantern_power_system,
+                camera_orbit_system,
             ),
         )
         .run();
