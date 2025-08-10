@@ -47,22 +47,23 @@ pub fn lantern_power_system(
                     material.emissive = Color::BLACK.to_linear();
                 }
             }
-        } else if !lantern.cooldown.finished() {
+        } else {
             lantern.cooldown.tick(time.delta());
-        } else if lantern.cooldown.finished() && rng.random_bool(TURN_ON_CHANCE) {
-            if can_turn_on(lantern.grid_pos, &grid_state) {
-                lantern.is_on = true;
-                lantern.on_timer.reset();
-                lantern.radiance = rng.random_range(5.0..=15.0);
-                light.intensity = rng.random_range(1000.0..8000.0);
-                if let Some(material) = materials.get_mut(&mut material.0) {
-                    material.emissive = Color::srgb(1.0, 0.5, 0.0).to_linear() * 100.0;
-                }
-                if let Some(grid_lantern) = grid_state
-                    .iter_mut()
-                    .find(|(pos, _)| *pos == lantern.grid_pos)
-                {
-                    grid_lantern.1 = true;
+            if lantern.cooldown.finished() && rng.random_bool(TURN_ON_CHANCE) {
+                if can_turn_on(lantern.grid_pos, &grid_state) {
+                    lantern.is_on = true;
+                    lantern.on_timer.reset();
+                    lantern.radiance = rng.random_range(5.0..=15.0);
+                    light.intensity = rng.random_range(1000.0..8000.0);
+                    if let Some(material) = materials.get_mut(&mut material.0) {
+                        material.emissive = Color::srgb(1.0, 0.5, 0.0).to_linear() * 100.0;
+                    }
+                    if let Some(grid_lantern) = grid_state
+                        .iter_mut()
+                        .find(|(pos, _)| *pos == lantern.grid_pos)
+                    {
+                        grid_lantern.1 = true;
+                    }
                 }
             }
         }

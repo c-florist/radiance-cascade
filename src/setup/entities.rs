@@ -26,6 +26,9 @@ pub fn setup_lanterns(
 
                 let lantern_glow_color = Color::srgb(1.0, 0.5, 0.0);
 
+                let mut cooldown = Timer::from_seconds(10.0, TimerMode::Once);
+                cooldown.tick(cooldown.duration());
+
                 commands.spawn((
                     Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 1.0))),
                     MeshMaterial3d(materials.add(StandardMaterial {
@@ -46,7 +49,7 @@ pub fn setup_lanterns(
                             rng.random_range(5.0..=20.0),
                             TimerMode::Once,
                         ),
-                        cooldown: Timer::from_seconds(0.0, TimerMode::Once),
+                        cooldown,
                         grid_pos: (i, j),
                     },
                 ));
