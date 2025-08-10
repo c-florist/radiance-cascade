@@ -37,18 +37,19 @@ pub fn lantern_power_system(
 
     for (_, mut material, mut light, mut lantern) in lantern_query.iter_mut() {
         if lantern.is_on {
-            lantern.timer.tick(time.delta());
-            if lantern.timer.finished() {
+            lantern.on_timer.tick(time.delta());
+            if lantern.on_timer.finished() {
                 lantern.is_on = false;
+                lantern.cooldown.reset();
                 light.intensity = 0.0;
                 if let Some(material) = materials.get_mut(&mut material.0) {
                     material.emissive = Color::BLACK.to_linear();
                 }
             }
-        } else if rng.random_bool(TURN_ON_CHANCE) {
+        } else if lantern.cooldown.finished() && rng.random_bool(TURN_ON_CHANCE) {
             if can_turn_on(lantern.grid_pos, &grid_state) {
                 lantern.is_on = true;
-                lantern.timer.reset();
+                lantern.on_timer.reset();
                 light.intensity = rng.random_range(1000.0..8000.0);
                 if let Some(material) = materials.get_mut(&mut material.0) {
                     material.emissive = Color::srgb(1.0, 0.5, 0.0).to_linear() * 100.0;

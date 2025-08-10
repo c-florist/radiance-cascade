@@ -10,7 +10,8 @@ pub struct Velocity(pub Vec3);
 pub struct Lantern {
     pub radiance: f32,
     pub is_on: bool,
-    pub timer: Timer,
+    pub on_timer: Timer,
+    pub cooldown: Timer,
     pub grid_pos: (i32, i32),
 }
 
@@ -19,7 +20,8 @@ impl Default for Lantern {
         Self {
             radiance: 1.0,
             is_on: false,
-            timer: Timer::from_seconds(1.0, TimerMode::Once),
+            on_timer: Timer::from_seconds(1.0, TimerMode::Once),
+            cooldown: Timer::from_seconds(10.0, TimerMode::Once),
             grid_pos: (0, 0),
         }
     }
