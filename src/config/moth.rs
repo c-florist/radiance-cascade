@@ -5,7 +5,6 @@ pub struct MothConfig {
     pub moth_count: usize,
     pub moth_speed: f32,
 
-    pub attraction_weight: f32,
     pub wander_factor: f32,
 
     // --- Landing ---
@@ -19,7 +18,6 @@ impl Default for MothConfig {
         Self {
             moth_count: 150,
             moth_speed: 1.0,
-            attraction_weight: 0.05,
             wander_factor: 0.1,
             landing_distance: 0.6,
             landing_chance: 0.08,

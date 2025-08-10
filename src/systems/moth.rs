@@ -45,8 +45,9 @@ pub fn moth_wander_system(
             * moth_config.wander_factor)
             .normalize_or_zero();
 
-        let attraction = calculate_attraction_force(transform, &active_lanterns, &lantern_config);
-        velocity.0 += attraction * moth_config.attraction_weight + wander_force;
+        let force = calculate_attraction_force(transform, &active_lanterns, &lantern_config);
+
+        velocity.0 += force + wander_force;
         velocity.0 = velocity.0.normalize_or_zero() * moth_config.moth_speed;
     }
 }
@@ -62,20 +63,35 @@ fn calculate_attraction_force(
         return Vec3::ZERO;
     }
 
-    let (closest_lantern_transform, lantern) = lantern_snapshot
-        .iter()
-        .min_by(|(a, _), (b, _)| {
+    let Some((closest_lantern_transform, lantern)) =
+        lantern_snapshot.iter().min_by(|(a, _), (b, _)| {
             moth_transform
                 .translation
                 .distance_squared(a.translation)
                 .partial_cmp(&moth_transform.translation.distance_squared(b.translation))
                 .unwrap_or(std::cmp::Ordering::Equal)
         })
-        .unwrap();
+    else {
+        return Vec3::ZERO;
+    };
 
-    let direction_to_lantern =
-        (closest_lantern_transform.translation - moth_transform.translation).normalize_or_zero();
-    direction_to_lantern * lantern.radiance
+    let distance = moth_transform
+        .translation
+        .distance(closest_lantern_transform.translation);
+
+    if distance < lantern_config.personal_space {
+        // If too close, calculate repulsion force
+        let direction_away_from_lantern = (moth_transform.translation
+            - closest_lantern_transform.translation)
+            .normalize_or_zero();
+        direction_away_from_lantern * (1.0 / distance)
+    } else {
+        // Otherwise, calculate attraction force
+        let direction_to_lantern = (closest_lantern_transform.translation
+            - moth_transform.translation)
+            .normalize_or_zero();
+        direction_to_lantern * lantern.radiance
+    }
 }
 
 pub fn moth_landing_system(
@@ -185,13 +201,11 @@ pub fn moth_movement_system(
 mod tests {
     use super::*;
     use bevy::app::App;
-    use bevy::ecs::entity::Entity;
     use bevy::time::{Timer, TimerMode};
     use std::time::Duration;
 
     #[test]
     fn test_moth_wander_system_gives_velocity_to_moth_with_zero_velocity() {
-        // Setup
         let mut app = App::new();
         app.insert_resource(MothConfig::default());
         app.insert_resource(LanternConfig::default());
@@ -202,10 +216,8 @@ mod tests {
             .spawn((Moth, Transform::default(), Velocity(Vec3::ZERO)))
             .id();
 
-        // Run the system
         app.update();
 
-        // Check assertions
         let moth_velocity = app.world().get::<Velocity>(moth_entity).unwrap();
         assert_ne!(moth_velocity.0, Vec3::ZERO);
     }
@@ -278,6 +290,7 @@ mod tests {
         ];
         let lantern_config = LanternConfig::default();
         let force = calculate_attraction_force(&moth_transform, &lantern_snapshot, &lantern_config);
+        // The moth should be attracted to the closest lantern.
         assert_eq!(force, Vec3::new(1.0, 0.0, 0.0));
     }
 
@@ -299,5 +312,40 @@ mod tests {
     #[test]
     fn test_should_land_false_false() {
         assert_eq!(should_land(false, false), MothAction::DoNothing);
+    }
+
+    #[test]
+    fn test_moth_avoids_lantern_personal_space() {
+        let mut app = App::new();
+        app.insert_resource(MothConfig::default());
+        app.insert_resource(LanternConfig::default());
+        app.add_systems(Update, moth_wander_system);
+
+        app.world_mut().spawn((
+            Lantern {
+                radiance: 1.0,
+                is_on: true,
+                timer: Timer::from_seconds(1.0, TimerMode::Once),
+                grid_pos: (0, 0),
+            },
+            Transform::from_xyz(0.0, 0.0, 0.0),
+        ));
+
+        let moth_entity = app
+            .world_mut()
+            .spawn((
+                Moth,
+                Transform::from_xyz(0.1, 0.0, 0.0),
+                Velocity(Vec3::new(-1.0, 0.0, 0.0)),
+            ))
+            .id();
+
+        app.update();
+
+        let moth_velocity = app.world().get::<Velocity>(moth_entity).unwrap();
+        assert!(
+            moth_velocity.0.x >= 0.0,
+            "Moth should be pushed away from the lantern"
+        );
     }
 }

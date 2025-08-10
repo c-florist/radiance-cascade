@@ -8,7 +8,7 @@ pub struct LanternConfig {
 impl Default for LanternConfig {
     fn default() -> Self {
         Self {
-            personal_space: 1.5,
+            personal_space: 0.5,
         }
     }
 }
