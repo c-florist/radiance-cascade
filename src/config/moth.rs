@@ -4,6 +4,7 @@ use bevy::prelude::Resource;
 pub struct MothConfig {
     pub moth_count: i32,
     pub moth_speed: f32,
+    pub view_radius: f32,
 }
 
 impl Default for MothConfig {
@@ -11,6 +12,7 @@ impl Default for MothConfig {
         Self {
             moth_count: 150,
             moth_speed: 1.0,
+            view_radius: 15.0,
         }
     }
 }
