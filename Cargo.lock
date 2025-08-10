@@ -3281,6 +3281,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "phototaxis"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_rand",
+ "console_error_panic_hook",
+ "getrandom 0.3.3",
+ "log",
+ "rand 0.9.2",
+ "uuid",
+]
+
+[[package]]
 name = "pin-project"
 version = "1.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3437,19 +3450,6 @@ name = "r-efi"
 version = "5.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "69cdb34c158ceb288df11e18b4bd39de994f6657d83847bdffdbd7f346754b0f"
-
-[[package]]
-name = "radiance-cascade"
-version = "0.1.0"
-dependencies = [
- "bevy",
- "bevy_rand",
- "console_error_panic_hook",
- "getrandom 0.3.3",
- "log",
- "rand 0.9.2",
- "uuid",
-]
 
 [[package]]
 name = "radsort"

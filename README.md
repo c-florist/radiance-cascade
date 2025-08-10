@@ -1,3 +1,3 @@
-# Radiance cascade
+# Phototaxis
 
-A simulation of moths flocking to light sources.
+A simulation of "moths" flocking to light sources.

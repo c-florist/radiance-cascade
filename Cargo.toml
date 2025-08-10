@@ -1,9 +1,9 @@
 [package]
-name = "radiance-cascade"
+name = "phototaxis"
 version = "0.1.0"
 description = "A simulation of moth behaviour"
 authors = ["Connor Flowers"]
-repository = "https://github.com/c-florist/radiance-cascade"
+repository = "https://github.com/c-florist/phototaxis"
 edition = "2024"
 rust-version = "1.88.0"
 
