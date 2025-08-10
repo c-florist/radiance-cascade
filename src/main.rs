@@ -3,7 +3,10 @@ use bevy_rand::prelude::{EntropyPlugin, WyRand};
 use std::panic;
 
 use crate::config::{LanternConfig, MothConfig};
-use crate::setup::{setup_lanterns, setup_lights_and_camera, setup_moths, setup_wall};
+use crate::resources::SpatialIndex;
+use crate::setup::{
+    setup_lantern_index, setup_lanterns, setup_lights_and_camera, setup_moths, setup_wall,
+};
 use crate::systems::{
     enforce_boundary_system, lantern_power_system, moth_attraction_system, moth_collision_system,
     moth_movement_system, moth_wander_system,
@@ -11,6 +14,7 @@ use crate::systems::{
 
 mod components;
 mod config;
+mod resources;
 mod setup;
 mod systems;
 
@@ -30,6 +34,7 @@ fn main() {
             }),
             EntropyPlugin::<WyRand>::default(),
         ))
+        .init_resource::<SpatialIndex>()
         .insert_resource(MothConfig::default())
         .insert_resource(LanternConfig::default())
         .add_systems(
@@ -39,6 +44,7 @@ fn main() {
                 setup_lights_and_camera,
                 setup_lanterns,
                 setup_moths,
+                setup_lantern_index,
             )
                 .chain(),
         )
