@@ -4,7 +4,10 @@ use std::panic;
 
 use crate::config::{LanternConfig, MothConfig};
 use crate::setup::{setup_lanterns, setup_lights_and_camera, setup_moths, setup_wall};
-use crate::systems::{lantern_power_system, moth_attraction_system, moth_movement_system};
+use crate::systems::{
+    lantern_power_system, moth_attraction_system, moth_collision_system, moth_movement_system,
+    moth_wander_system,
+};
 
 mod components;
 mod config;
@@ -43,7 +46,9 @@ fn main() {
             Update,
             (
                 lantern_power_system,
+                moth_wander_system,
                 moth_attraction_system,
+                moth_collision_system,
                 moth_movement_system,
             )
                 .chain(),
