@@ -1,5 +1,6 @@
 use crate::components::Lantern;
 use bevy::prelude::*;
+use bevy_rand::prelude::{GlobalEntropy, WyRand};
 use rand::Rng;
 
 fn can_turn_on(pos: (i32, i32), grid: &[((i32, i32), bool)]) -> bool {
@@ -26,16 +27,18 @@ pub fn lantern_power_system(
     >,
     mut materials: ResMut<Assets<StandardMaterial>>,
     time: Res<Time>,
+    mut rng: GlobalEntropy<WyRand>,
 ) {
     const TURN_ON_CHANCE: f64 = 0.01;
 
-    let mut rng = rand::rng();
     let mut grid_state: Vec<((i32, i32), bool)> = lantern_query
         .iter()
         .map(|(_, _, _, lantern)| (lantern.grid_pos, lantern.is_on))
         .collect();
 
     for (_, mut material, mut light, mut lantern) in lantern_query.iter_mut() {
+        lantern.cooldown.tick(time.delta());
+
         if lantern.is_on {
             lantern.on_timer.tick(time.delta());
             if lantern.on_timer.finished() {
