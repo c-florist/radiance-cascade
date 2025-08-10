@@ -37,6 +37,7 @@ fn main() {
         .init_resource::<SpatialIndex>()
         .insert_resource(MothConfig::default())
         .insert_resource(LanternConfig::default())
+        .insert_resource(ClearColor(Color::srgb(0.0, 0.0, 0.02)))
         .add_systems(
             Startup,
             (
