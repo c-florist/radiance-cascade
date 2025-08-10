@@ -35,7 +35,7 @@ pub fn setup_lights_and_camera(mut commands: Commands) {
         },
         Camera3d { ..default() },
         DistanceFog {
-            color: Color::srgb(0.0, 0.0, 0.2),
+            color: Color::srgb(0.0, 0.0, 0.25),
             falloff: FogFalloff::Linear {
                 start: 15.0,
                 end: 25.0,
