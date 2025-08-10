@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_rand::prelude::{GlobalEntropy, WyRand};
 use rand::Rng;
 
 use crate::components::{Lantern, Moth, Velocity, Wall};
@@ -9,10 +10,10 @@ pub fn setup_lanterns(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     wall_query: Query<&Transform, With<Wall>>,
+    mut rng: GlobalEntropy<WyRand>,
 ) {
     const LANTERN_SPACING: f32 = 5.0;
     const WALL_SIZE: Vec2 = Vec2::new(20.0, 20.0);
-    let mut rng = rand::rng();
 
     if let Ok(wall_transform) = wall_query.single() {
         let num_x = (WALL_SIZE.x / LANTERN_SPACING).floor() as i32;
@@ -39,10 +40,10 @@ pub fn setup_lanterns(
                     },
                     Transform::from_xyz(x, y, wall_transform.translation.z + 0.5),
                     Lantern {
-                        radiance: 15.0,
+                        radiance: 0.0,
                         is_on: false,
                         on_timer: Timer::from_seconds(
-                            rng.random_range(30.0..60.0),
+                            rng.random_range(5.0..=20.0),
                             TimerMode::Once,
                         ),
                         cooldown: Timer::from_seconds(0.0, TimerMode::Once),

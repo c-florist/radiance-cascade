@@ -53,6 +53,7 @@ pub fn lantern_power_system(
             if can_turn_on(lantern.grid_pos, &grid_state) {
                 lantern.is_on = true;
                 lantern.on_timer.reset();
+                lantern.radiance = rng.random_range(5.0..=15.0);
                 light.intensity = rng.random_range(1000.0..8000.0);
                 if let Some(material) = materials.get_mut(&mut material.0) {
                     material.emissive = Color::srgb(1.0, 0.5, 0.0).to_linear() * 100.0;
