@@ -1,5 +1,5 @@
 use crate::components::{Lantern, Moth, Velocity};
-use crate::config::MothConfig;
+use crate::config::{LanternConfig, MothConfig};
 use bevy::prelude::*;
 use bevy_rand::prelude::{GlobalEntropy, WyRand};
 use rand::Rng;
@@ -10,7 +10,6 @@ pub fn moth_wander_system(
     mut rng: GlobalEntropy<WyRand>,
 ) {
     for mut velocity in moth_query.iter_mut() {
-        // If the moth has stopped, give it a new random direction.
         if velocity.0 == Vec3::ZERO {
             velocity.0 = Vec3::new(
                 rng.random_range(-1.0..1.0),
@@ -62,7 +61,7 @@ pub fn moth_attraction_system(
         }
 
         if total_attraction_force.length_squared() > 0.0 {
-            let acceleration = total_attraction_force * 0.0001;
+            let acceleration = total_attraction_force * moth_config.attraction_factor;
             velocity.0 += acceleration * time.delta_secs();
         }
     }
@@ -85,17 +84,19 @@ pub fn moth_movement_system(
 pub fn moth_collision_system(
     mut moth_query: Query<(&mut Transform, &mut Velocity), With<Moth>>,
     lantern_query: Query<&Transform, (With<Lantern>, Without<Moth>)>,
+    lantern_config: Res<LanternConfig>,
 ) {
     for (mut moth_transform, mut velocity) in moth_query.iter_mut() {
         for lantern_transform in lantern_query.iter() {
             let distance = moth_transform
                 .translation
                 .distance(lantern_transform.translation);
-            if distance < 0.5 {
+            if distance < lantern_config.physical_radius {
                 let direction = (moth_transform.translation - lantern_transform.translation)
                     .normalize_or_zero();
                 velocity.0 = direction * velocity.0.length();
-                moth_transform.translation = lantern_transform.translation + direction * 0.5;
+                moth_transform.translation =
+                    lantern_transform.translation + direction * lantern_config.physical_radius;
             }
         }
     }
