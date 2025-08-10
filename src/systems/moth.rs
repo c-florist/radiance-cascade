@@ -69,12 +69,10 @@ mod tests {
 
     #[test]
     fn test_moth_moves_towards_closest_lantern() {
-        // Setup
         let mut app = App::new();
         app.insert_resource(MothConfig::default());
         app.add_systems(Update, moth_attraction_system);
 
-        // Arrange
         let moth_id = app
             .world_mut()
             .spawn((
@@ -84,7 +82,7 @@ mod tests {
             ))
             .id();
 
-        // Far lantern
+        // Far away
         app.world_mut().spawn((
             Lantern {
                 is_on: true,
@@ -93,7 +91,7 @@ mod tests {
             Transform::from_xyz(100.0, 0.0, 0.0),
         ));
 
-        // Close lantern
+        // Close to moth
         app.world_mut().spawn((
             Lantern {
                 is_on: true,
@@ -102,7 +100,7 @@ mod tests {
             Transform::from_xyz(10.0, 0.0, 0.0),
         ));
 
-        // Off lantern (should be ignored)
+        // Should be ignored as off
         app.world_mut().spawn((
             Lantern {
                 is_on: false,
@@ -111,10 +109,8 @@ mod tests {
             Transform::from_xyz(1.0, 0.0, 0.0),
         ));
 
-        // Act
         app.update();
 
-        // Assert
         let moth_velocity = app.world().get::<Velocity>(moth_id).unwrap();
         assert_eq!(
             moth_velocity.0.normalize_or_zero(),
@@ -138,7 +134,7 @@ mod tests {
             ))
             .id();
 
-        // Lantern A: Inside view radius, low radiance
+        // Inside view radius, low radiance
         app.world_mut().spawn((
             Lantern {
                 is_on: true,
@@ -148,7 +144,7 @@ mod tests {
             Transform::from_xyz(10.0, 0.0, 0.0),
         ));
 
-        // Lantern B: Inside view radius, high radiance
+        // Inside view radius, high radiance
         app.world_mut().spawn((
             Lantern {
                 is_on: true,
@@ -158,7 +154,7 @@ mod tests {
             Transform::from_xyz(-12.0, 0.0, 0.0),
         ));
 
-        // Lantern C: Outside view radius, highest radiance
+        // Outside view radius, highest radiance
         app.world_mut().spawn((
             Lantern {
                 is_on: true,
