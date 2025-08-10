@@ -8,7 +8,6 @@ pub fn setup_ceiling(mut commands: Commands) {
         Ceiling,
         Transform::from_xyz(0.0, 10.0, 0.0),
         GlobalTransform::default(),
-        Name::new("Ceiling"),
     ));
 }
 

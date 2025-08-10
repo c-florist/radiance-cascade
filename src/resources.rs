@@ -11,7 +11,6 @@ pub struct SpatialIndex {
 }
 
 impl SpatialIndex {
-    /// Lookup all entities within adjacent cells of our spatial index.
     pub fn get_nearby(&self, pos: Vec2) -> Vec<Entity> {
         let tile = (
             (pos.x / CELL_SIZE).floor() as i32,
