@@ -32,31 +32,32 @@ pub fn moth_wander_system(
     }
 }
 
+use crate::resources::SpatialIndex;
+
 pub fn moth_attraction_system(
     moth_config: Res<MothConfig>,
     mut moth_query: Query<(&Transform, &mut Velocity), With<Moth>>,
-    lantern_query: Query<(&Transform, &Lantern)>,
+    lantern_query: Query<(Entity, &Transform, &Lantern)>,
     time: Res<Time>,
+    spatial_index: Res<SpatialIndex>,
 ) {
-    let active_lanterns: Vec<_> = lantern_query
-        .iter()
-        .filter(|(_, lantern)| lantern.is_on)
-        .collect();
-
-    if active_lanterns.is_empty() {
-        return;
-    }
-
     for (moth_transform, mut velocity) in moth_query.iter_mut() {
+        let nearby_lanterns = spatial_index.get_nearby(moth_transform.translation.xy());
         let mut total_attraction_force = Vec3::ZERO;
 
-        for (lantern_transform, lantern) in &active_lanterns {
-            let to_lantern = lantern_transform.translation - moth_transform.translation;
-            let dist_sq = to_lantern.length_squared();
+        for lantern_entity in nearby_lanterns {
+            if let Ok((_, lantern_transform, lantern)) = lantern_query.get(lantern_entity) {
+                if !lantern.is_on {
+                    continue;
+                }
 
-            if dist_sq < moth_config.view_radius.powi(2) {
-                let strength = lantern.radiance / (dist_sq + 1.0);
-                total_attraction_force += to_lantern.normalize_or_zero() * strength;
+                let to_lantern = lantern_transform.translation - moth_transform.translation;
+                let dist_sq = to_lantern.length_squared();
+
+                if dist_sq < moth_config.view_radius.powi(2) {
+                    let strength = lantern.radiance / (dist_sq + 1.0);
+                    total_attraction_force += to_lantern.normalize_or_zero() * strength;
+                }
             }
         }
 
@@ -85,18 +86,23 @@ pub fn moth_collision_system(
     mut moth_query: Query<(&mut Transform, &mut Velocity), With<Moth>>,
     lantern_query: Query<&Transform, (With<Lantern>, Without<Moth>)>,
     lantern_config: Res<LanternConfig>,
+    spatial_index: Res<SpatialIndex>,
 ) {
     for (mut moth_transform, mut velocity) in moth_query.iter_mut() {
-        for lantern_transform in lantern_query.iter() {
-            let distance = moth_transform
-                .translation
-                .distance(lantern_transform.translation);
-            if distance < lantern_config.physical_radius {
-                let direction = (moth_transform.translation - lantern_transform.translation)
-                    .normalize_or_zero();
-                velocity.0 = direction * velocity.0.length();
-                moth_transform.translation =
-                    lantern_transform.translation + direction * lantern_config.physical_radius;
+        let nearby_lanterns = spatial_index.get_nearby(moth_transform.translation.xy());
+
+        for lantern_entity in nearby_lanterns {
+            if let Ok(lantern_transform) = lantern_query.get(lantern_entity) {
+                let distance = moth_transform
+                    .translation
+                    .distance(lantern_transform.translation);
+                if distance < lantern_config.physical_radius {
+                    let direction = (moth_transform.translation - lantern_transform.translation)
+                        .normalize_or_zero();
+                    velocity.0 = direction * velocity.0.length();
+                    moth_transform.translation =
+                        lantern_transform.translation + direction * lantern_config.physical_radius;
+                }
             }
         }
     }
