@@ -124,7 +124,7 @@ mod tests {
     }
 
     #[test]
-    fn test_moth_attraction_logic() {
+    fn test_moth_is_attracted_to_lanterns_within_view_radius() {
         let mut app = App::new();
         app.insert_resource(MothConfig::default());
         app.add_systems(Update, moth_attraction_system);
