@@ -47,7 +47,7 @@ fn main() {
             (
                 lantern_power_system,
                 moth_wander_system,
-                // moth_attraction_system,
+                moth_attraction_system,
                 moth_collision_system,
                 enforce_boundary_system,
                 moth_movement_system,

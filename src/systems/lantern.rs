@@ -37,8 +37,6 @@ pub fn lantern_power_system(
         .collect();
 
     for (_, mut material, mut light, mut lantern) in lantern_query.iter_mut() {
-        lantern.cooldown.tick(time.delta());
-
         if lantern.is_on {
             lantern.on_timer.tick(time.delta());
             if lantern.on_timer.finished() {
@@ -49,6 +47,8 @@ pub fn lantern_power_system(
                     material.emissive = Color::BLACK.to_linear();
                 }
             }
+        } else if !lantern.cooldown.finished() {
+            lantern.cooldown.tick(time.delta());
         } else if lantern.cooldown.finished() && rng.random_bool(TURN_ON_CHANCE) {
             if can_turn_on(lantern.grid_pos, &grid_state) {
                 lantern.is_on = true;
