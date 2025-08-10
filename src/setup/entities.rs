@@ -10,7 +10,7 @@ pub fn setup_lanterns(
     mut materials: ResMut<Assets<StandardMaterial>>,
     wall_query: Query<&Transform, With<Wall>>,
 ) {
-    const LANTERN_SPACING: f32 = 2.5;
+    const LANTERN_SPACING: f32 = 4.5;
     const WALL_SIZE: Vec2 = Vec2::new(20.0, 20.0);
     let mut rng = rand::rng();
 
@@ -26,7 +26,7 @@ pub fn setup_lanterns(
                 let lantern_glow_color = Color::srgb(1.0, 0.5, 0.0);
 
                 commands.spawn((
-                    Mesh3d(meshes.add(Cuboid::new(0.5, 0.5, 0.5))),
+                    Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 1.0))),
                     MeshMaterial3d(materials.add(StandardMaterial {
                         base_color: Color::srgb(0.8, 0.7, 0.6),
                         ..default()
@@ -61,7 +61,7 @@ pub fn setup_moths(
     for _ in 0..config.moth_count {
         commands.spawn((
             Mesh3d(meshes.add(Cone::new(0.05, 0.1))),
-            MeshMaterial3d(materials.add(Color::srgb(0.9, 0.9, 0.8))),
+            MeshMaterial3d(materials.add(Color::srgb(1.0, 1.0, 1.0))),
             Transform::from_xyz(
                 rng.random_range(-5.0..5.0),
                 rng.random_range(0.5..4.0),
