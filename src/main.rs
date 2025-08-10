@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_rand::prelude::{EntropyPlugin, WyRand};
 use std::panic;
 
 use crate::config::{LanternConfig, MothConfig};
@@ -14,15 +15,18 @@ fn main() {
     panic::set_hook(Box::new(console_error_panic_hook::hook));
 
     App::new()
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                title: "Radiance cascade".into(),
-                canvas: Some("#bevy".to_owned()),
-                fit_canvas_to_parent: true,
+        .add_plugins((
+            DefaultPlugins.set(WindowPlugin {
+                primary_window: Some(Window {
+                    title: "Radiance cascade".into(),
+                    canvas: Some("#bevy".to_owned()),
+                    fit_canvas_to_parent: true,
+                    ..default()
+                }),
                 ..default()
             }),
-            ..default()
-        }))
+            EntropyPlugin::<WyRand>::default(),
+        ))
         .insert_resource(MothConfig::default())
         .insert_resource(LanternConfig::default())
         .add_systems(
