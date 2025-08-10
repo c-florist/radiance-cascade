@@ -14,8 +14,16 @@ pub struct Lantern {
     pub grid_pos: (i32, i32),
 }
 
-#[derive(Component)]
-pub struct LandedTimer(pub Timer);
+impl Default for Lantern {
+    fn default() -> Self {
+        Self {
+            radiance: 1.0,
+            is_on: false,
+            timer: Timer::from_seconds(1.0, TimerMode::Once),
+            grid_pos: (0, 0),
+        }
+    }
+}
 
 #[derive(Component)]
 pub struct Wall;
