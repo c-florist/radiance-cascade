@@ -45,7 +45,7 @@ pub fn setup_lanterns(
                             rng.random_range(30.0..60.0),
                             TimerMode::Once,
                         ),
-                        cooldown: Timer::from_seconds(10.0, TimerMode::Once),
+                        cooldown: Timer::from_seconds(0.0, TimerMode::Once),
                         grid_pos: (i, j),
                     },
                 ));
