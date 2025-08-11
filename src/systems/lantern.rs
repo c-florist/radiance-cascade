@@ -22,11 +22,6 @@ pub fn lantern_power_system(
 ) {
     const BASE_EMISSIVE_COLOR: Color = Color::srgb(1.0, 0.5, 0.0);
 
-    let mut grid_state: Vec<((i32, i32), bool)> = lantern_query
-        .iter()
-        .map(|(_, _, _, lantern)| (lantern.grid_pos, lantern.is_on))
-        .collect();
-
     for (_, mut material_handle, mut light, mut lantern) in lantern_query.iter_mut() {
         if lantern.is_on {
             lantern.on_timer.tick(time.delta());
@@ -69,12 +64,6 @@ pub fn lantern_power_system(
                 if let Some(material) = materials.get_mut(&mut material_handle.0) {
                     material.emissive =
                         BASE_EMISSIVE_COLOR.to_linear() * config.emissive_multiplier;
-                }
-                if let Some(grid_lantern) = grid_state
-                    .iter_mut()
-                    .find(|(pos, _)| *pos == lantern.grid_pos)
-                {
-                    grid_lantern.1 = true;
                 }
             }
         }

@@ -51,7 +51,6 @@ pub fn setup_lanterns(
                             TimerMode::Once,
                         ),
                         cooldown,
-                        grid_pos: (i, j),
                         ..default()
                     },
                     LanternBob {
