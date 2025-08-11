@@ -70,12 +70,14 @@ pub fn lantern_power_system(
     }
 }
 
-pub fn lantern_bob_system(time: Res<Time>, mut query: Query<(&mut Transform, &LanternBob)>) {
-    const BOB_SPEED: f32 = 1.15;
-    const BOB_AMPLITUDE: f32 = 0.25;
-
+pub fn lantern_bob_system(
+    time: Res<Time>,
+    mut query: Query<(&mut Transform, &LanternBob)>,
+    config: Res<LanternConfig>,
+) {
     for (mut transform, bob) in query.iter_mut() {
         transform.translation.y = bob.initial_y
-            + (time.elapsed_secs() * BOB_SPEED + bob.phase_offset).sin() * BOB_AMPLITUDE;
+            + (time.elapsed_secs() * config.bob_speed + bob.phase_offset).sin()
+                * config.bob_amplitude;
     }
 }
