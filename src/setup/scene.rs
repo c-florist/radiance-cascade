@@ -35,7 +35,13 @@ pub fn setup_lights_and_camera(mut commands: Commands) {
             },
             ..default()
         },
-        Bloom::default(),
+        Bloom {
+            intensity: 0.3,
+            low_frequency_boost: 0.6,
+            low_frequency_boost_curvature: 0.4,
+            high_pass_frequency: 0.8,
+            ..default()
+        },
         Transform::from_xyz(
             initial_radius * initial_angle.cos(),
             5.0,
