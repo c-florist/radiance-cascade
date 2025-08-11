@@ -1,7 +1,7 @@
 use bevy::core_pipeline::bloom::Bloom;
 use bevy::prelude::*;
 
-use crate::components::Ceiling;
+use crate::components::{Ceiling, OrbitCamera};
 
 pub fn setup_ceiling(mut commands: Commands) {
     commands.spawn((
@@ -18,6 +18,9 @@ pub fn setup_lights_and_camera(mut commands: Commands) {
         affects_lightmapped_meshes: false,
     });
 
+    let initial_radius = 15.0;
+    let initial_angle = std::f32::consts::FRAC_PI_2;
+
     commands.spawn((
         Camera {
             hdr: true,
@@ -33,6 +36,15 @@ pub fn setup_lights_and_camera(mut commands: Commands) {
             ..default()
         },
         Bloom::default(),
-        Transform::from_xyz(0.0, 5.0, 15.0).looking_at(Vec3::new(0.0, 5.0, 0.0), Vec3::Y),
+        Transform::from_xyz(
+            initial_radius * initial_angle.cos(),
+            5.0,
+            initial_radius * initial_angle.sin(),
+        )
+        .looking_at(Vec3::new(0.0, 5.0, 0.0), Vec3::Y),
+        OrbitCamera {
+            radius: initial_radius,
+            angle: initial_angle,
+        },
     ));
 }

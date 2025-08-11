@@ -35,3 +35,9 @@ pub struct LanternBob {
 
 #[derive(Component)]
 pub struct Ceiling;
+
+#[derive(Component)]
+pub struct OrbitCamera {
+    pub radius: f32,
+    pub angle: f32,
+}

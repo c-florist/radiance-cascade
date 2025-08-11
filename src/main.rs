@@ -8,7 +8,7 @@ use crate::setup::{
     setup_ceiling, setup_lantern_index, setup_lanterns, setup_lights_and_camera, setup_moths,
 };
 use crate::systems::{
-    camera_orbit_system, enforce_boundary_system, lantern_bob_system, lantern_power_system,
+    camera_control_system, enforce_boundary_system, lantern_bob_system, lantern_power_system,
     moth_attraction_system, moth_collision_system, moth_movement_system, moth_wander_system,
 };
 
@@ -62,7 +62,7 @@ fn main() {
                 moth_movement_system,
                 lantern_power_system,
                 lantern_bob_system,
-                // camera_orbit_system,
+                camera_control_system,
             ),
         )
         .run();
