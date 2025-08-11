@@ -52,6 +52,7 @@ pub fn setup_lanterns(
                         ),
                         cooldown,
                         grid_pos: (i, j),
+                        ..default()
                     },
                     LanternBob {
                         initial_y: y,

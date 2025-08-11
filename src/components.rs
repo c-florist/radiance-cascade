@@ -13,6 +13,7 @@ pub struct Lantern {
     pub on_timer: Timer,
     pub cooldown: Timer,
     pub grid_pos: (i32, i32),
+    pub base_intensity: f32,
 }
 
 impl Default for Lantern {
@@ -23,6 +24,7 @@ impl Default for Lantern {
             on_timer: Timer::from_seconds(1.0, TimerMode::Once),
             cooldown: Timer::from_seconds(10.0, TimerMode::Once),
             grid_pos: (0, 0),
+            base_intensity: 0.0,
         }
     }
 }
