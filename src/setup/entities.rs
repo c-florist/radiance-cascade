@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_rand::prelude::{GlobalEntropy, WyRand};
 use rand::Rng;
 
-use crate::components::{Ceiling, Lantern, Moth, Velocity};
+use crate::components::{Ceiling, Lantern, LanternBob, Moth, Velocity};
 use crate::config::MothConfig;
 
 pub fn setup_lanterns(
@@ -52,6 +52,10 @@ pub fn setup_lanterns(
                         ),
                         cooldown,
                         grid_pos: (i, j),
+                    },
+                    LanternBob {
+                        initial_y: y,
+                        phase_offset: rng.random_range(0.0..std::f32::consts::TAU),
                     },
                 ));
             }

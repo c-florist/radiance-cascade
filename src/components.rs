@@ -28,4 +28,10 @@ impl Default for Lantern {
 }
 
 #[derive(Component)]
+pub struct LanternBob {
+    pub initial_y: f32,
+    pub phase_offset: f32,
+}
+
+#[derive(Component)]
 pub struct Ceiling;

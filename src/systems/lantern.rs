@@ -1,4 +1,4 @@
-use crate::components::Lantern;
+use crate::components::{Lantern, LanternBob};
 use bevy::prelude::*;
 use bevy_rand::prelude::{GlobalEntropy, WyRand};
 use rand::Rng;
@@ -53,5 +53,15 @@ pub fn lantern_power_system(
                 }
             }
         }
+    }
+}
+
+pub fn lantern_bob_system(time: Res<Time>, mut query: Query<(&mut Transform, &LanternBob)>) {
+    const BOB_SPEED: f32 = 1.15;
+    const BOB_AMPLITUDE: f32 = 0.25;
+
+    for (mut transform, bob) in query.iter_mut() {
+        transform.translation.y = bob.initial_y
+            + (time.elapsed_secs() * BOB_SPEED + bob.phase_offset).sin() * BOB_AMPLITUDE;
     }
 }
