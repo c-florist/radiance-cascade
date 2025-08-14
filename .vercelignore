@@ -1,0 +1,11 @@
+# Build artifacts and source code not needed for deployment
+/target
+/src
+.git
+.github
+
+# Local development config
+.pre-commit-config.yaml
+DEVELOPMENT_PLAN.md
+justfile
+mise.local.toml
