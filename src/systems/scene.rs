@@ -1,6 +1,10 @@
-use bevy::prelude::*;
+use bevy::{
+    input::touch::{TouchInput, TouchPhase},
+    prelude::*,
+};
 
 use crate::components::{Moth, OrbitCamera, Velocity};
+use crate::resources::TouchState;
 
 pub fn enforce_boundary_system(mut moth_query: Query<(&mut Transform, &mut Velocity), With<Moth>>) {
     const ROOM_RADIUS: f32 = 10.0;
@@ -38,17 +42,42 @@ pub fn enforce_boundary_system(mut moth_query: Query<(&mut Transform, &mut Veloc
 pub fn camera_control_system(
     mut camera_query: Query<(&mut Transform, &mut OrbitCamera), With<Camera>>,
     keys: Res<ButtonInput<KeyCode>>,
+    mut touch_events: EventReader<TouchInput>,
+    mut touch_state: Local<TouchState>,
     time: Res<Time>,
 ) {
     if let Ok((mut transform, mut orbit_camera)) = camera_query.single_mut() {
         let mut angle_delta = 0.0;
 
+        // Keyboard controls
         let keyboard_speed = 1.5;
         if keys.pressed(KeyCode::ArrowLeft) {
             angle_delta -= keyboard_speed * time.delta_secs();
         }
         if keys.pressed(KeyCode::ArrowRight) {
             angle_delta += keyboard_speed * time.delta_secs();
+        }
+
+        // Touch controls
+        let touch_speed = 0.1;
+        for ev in touch_events.read() {
+            match ev.phase {
+                TouchPhase::Started => {
+                    touch_state.start_pos = Some(ev.position);
+                    touch_state.last_pos = Some(ev.position);
+                }
+                TouchPhase::Moved => {
+                    if let Some(last_pos) = touch_state.last_pos {
+                        let delta = ev.position - last_pos;
+                        angle_delta += delta.x * touch_speed * time.delta_secs();
+                    }
+                    touch_state.last_pos = Some(ev.position);
+                }
+                TouchPhase::Ended | TouchPhase::Canceled => {
+                    touch_state.start_pos = None;
+                    touch_state.last_pos = None;
+                }
+            }
         }
 
         if angle_delta.abs() > f32::EPSILON {

@@ -27,3 +27,9 @@ impl SpatialIndex {
         nearby
     }
 }
+
+#[derive(Resource, Default)]
+pub struct TouchState {
+    pub start_pos: Option<Vec2>,
+    pub last_pos: Option<Vec2>,
+}

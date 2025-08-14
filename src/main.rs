@@ -3,7 +3,7 @@ use bevy_rand::prelude::{EntropyPlugin, WyRand};
 use std::panic;
 
 use crate::config::{LanternConfig, MothConfig};
-use crate::resources::SpatialIndex;
+use crate::resources::{SpatialIndex, TouchState};
 use crate::setup::{
     setup_ceiling, setup_lantern_index, setup_lanterns, setup_lights_and_camera, setup_moths,
 };
@@ -35,6 +35,7 @@ fn main() {
             EntropyPlugin::<WyRand>::default(),
         ))
         .init_resource::<SpatialIndex>()
+        .init_resource::<TouchState>()
         .insert_resource(MothConfig::default())
         .insert_resource(LanternConfig::default())
         .insert_resource(ClearColor(Color::srgb(0.0, 0.0, 0.02)))
