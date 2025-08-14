@@ -3,7 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <title>Phototaxis</title>
-    <link data-trunk rel="rust" data-wasm-opt="s" data-wasm-opt-params="--enable-bulk-memory" />
+    <link
+      data-trunk
+      rel="rust"
+      data-wasm-opt="s"
+      data-wasm-opt-params="--enable-bulk-memory --enable-nontrapping-float-to-int"
+    />
     <link data-trunk rel="copy-file" href="/assets/favicon.svg" />
     <style>
       body,
