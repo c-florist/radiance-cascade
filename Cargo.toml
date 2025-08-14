@@ -9,7 +9,7 @@ rust-version = "1.88.0"
 
 [package.metadata]
 # Install with: `cargo install --locked --version <trunk-version> trunk`
-trunk-version = "0.21"
+trunk-version = "^0.21"
 
 [profile.dev]
 opt-level = 1
