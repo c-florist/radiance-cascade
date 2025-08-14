@@ -1,3 +1,6 @@
 {
-  "private": true
+  "private": true,
+  "scripts": {
+    "vercel-build": "cargo install --locked --version 0.21 trunk && trunk build --release"
+  }
 }
