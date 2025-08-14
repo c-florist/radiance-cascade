@@ -28,7 +28,7 @@ jobs:
       - name: Install trunk
         uses: jetli/trunk-action@v0.5.1
         with:
-          version: ^0.21
+          version: v0.21.14
 
       - name: Build app for release
         run: trunk build --release
