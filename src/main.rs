@@ -38,7 +38,7 @@ fn main() {
         .init_resource::<TouchState>()
         .insert_resource(MothConfig::default())
         .insert_resource(LanternConfig::default())
-        .insert_resource(ClearColor(Color::srgb(0.0, 0.0, 0.02)))
+        .insert_resource(ClearColor(Color::srgb(0.01, 0.01, 0.08)))
         .add_systems(
             Startup,
             (

@@ -28,15 +28,15 @@ pub fn setup_lights_and_camera(mut commands: Commands) {
         },
         Camera3d { ..default() },
         DistanceFog {
-            color: Color::srgb(0.0, 0.0, 0.02),
-            falloff: FogFalloff::Exponential { density: 0.15 },
+            color: Color::srgb(0.05, 0.05, 0.2),
+            falloff: FogFalloff::Exponential { density: 0.10 },
             ..default()
         },
         Bloom {
-            intensity: 0.3,
+            intensity: 0.4,
             low_frequency_boost: 0.6,
             low_frequency_boost_curvature: 0.4,
-            high_pass_frequency: 0.8,
+            high_pass_frequency: 0.6,
             ..default()
         },
         Transform::from_xyz(
