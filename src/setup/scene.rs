@@ -18,7 +18,7 @@ pub fn setup_lights_and_camera(mut commands: Commands) {
         ..default()
     });
 
-    let initial_radius = 15.0;
+    let initial_radius = 18.0;
     let initial_angle = std::f32::consts::FRAC_PI_2;
 
     commands.spawn((
@@ -41,7 +41,7 @@ pub fn setup_lights_and_camera(mut commands: Commands) {
         },
         Transform::from_xyz(
             initial_radius * initial_angle.cos(),
-            5.0,
+            7.5,
             initial_radius * initial_angle.sin(),
         )
         .looking_at(Vec3::new(0.0, 5.0, 0.0), Vec3::Y),

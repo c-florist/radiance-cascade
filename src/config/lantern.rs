@@ -16,7 +16,7 @@ impl Default for LanternConfig {
             physical_radius: 1.0,
             on_chance: 0.01,
             flicker_chance: 0.01,
-            emissive_multiplier: 100.0,
+            emissive_multiplier: 300.0,
             bob_speed: 1.15,
             bob_amplitude: 0.25,
         }

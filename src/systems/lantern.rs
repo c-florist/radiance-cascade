@@ -54,7 +54,7 @@ fn handle_inactive_lantern(
         lantern.is_on = true;
         lantern.on_timer.reset();
         lantern.radiance = rng.random_range(5.0..=15.0);
-        let new_intensity = rng.random_range(2000.0..8000.0);
+        let new_intensity = rng.random_range(5000.0..15000.0);
         lantern.base_intensity = new_intensity;
         light.intensity = new_intensity;
         material.emissive = BASE_EMISSIVE_COLOR.to_linear() * config.emissive_multiplier;
