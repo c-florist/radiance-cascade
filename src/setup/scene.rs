@@ -13,9 +13,9 @@ pub fn setup_ceiling(mut commands: Commands) {
 
 pub fn setup_lights_and_camera(mut commands: Commands) {
     commands.insert_resource(AmbientLight {
-        color: Color::WHITE,
-        brightness: 0.2,
-        affects_lightmapped_meshes: false,
+        color: Color::srgb(0.1, 0.1, 0.3),
+        brightness: 0.05,
+        ..default()
     });
 
     let initial_radius = 15.0;
@@ -28,11 +28,8 @@ pub fn setup_lights_and_camera(mut commands: Commands) {
         },
         Camera3d { ..default() },
         DistanceFog {
-            color: Color::srgb(0.05, 0.05, 0.15),
-            falloff: FogFalloff::Linear {
-                start: 15.0,
-                end: 30.0,
-            },
+            color: Color::srgb(0.0, 0.0, 0.02),
+            falloff: FogFalloff::Exponential { density: 0.15 },
             ..default()
         },
         Bloom {
