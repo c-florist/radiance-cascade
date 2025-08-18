@@ -75,7 +75,7 @@ pub fn setup_moths(
             Mesh3d(meshes.add(Cone::new(0.05, 0.1))),
             MeshMaterial3d(materials.add(StandardMaterial {
                 base_color: Color::srgb(1.0, 1.0, 1.0),
-                emissive: Color::srgb(1.0, 1.0, 1.0).to_linear() * 2.0,
+                emissive: Color::srgb(1.0, 1.0, 1.0).to_linear() * 10.0,
                 ..default()
             })),
             Transform::from_xyz(
